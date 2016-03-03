@@ -1,10 +1,9 @@
 package dbase
 
-
 type PageStore interface {
-	Get(id pageid, page Page) error
-	Set(id pageid, page Page) error
-	Allocate() (pageid, error)
-	Deallocate(id pageid) error
+	Get(id PageID, page Page) error
+	Set(id PageID, page Page) error
+	New() (PageID, error)
+	Append(page Page) (PageID, error)
 	Count() int64
 }

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DIRECTORY_0_PAGE_ID = pageid(1)
+	DIRECTORY_0_PAGE_ID = PageID(1)
 	DIRECTORY_SIZE      = 8000
 	MAX_DIRECTORY       = 100
 
@@ -63,7 +63,7 @@ func NewDBDirectoryPage(directoryNumber uint16) *DBDirectoryPage {
 // The page is encoded as a []byte PAGE_SIZE long, ready for serialisation.
 func (page *DBDirectoryPage) MarshalBinary() ([]byte, error) {
 	page.pagetype = DB_DIRECTORY_PAGE
-	page.page.MarshalBinary()
+	page.page.Marshal()
 	binary.LittleEndian.PutUint16(page.header[DIRECTORY_NUMBER_START:DIRECTORY_NUMBER_END], uint16(page.directoryNumber))
 	binary.LittleEndian.PutUint16(page.header[ALLOCATED_PAGE_COUNT_START:ALLOCATED_PAGE_COUNT_END], uint16(page.allocatedPageCount))
 	binary.LittleEndian.PutUint16(page.header[FREE_PAGE_COUNT_START:FREE_PAGE_COUNT_END], uint16(page.freePageCount))
@@ -82,7 +82,7 @@ func (page *DBDirectoryPage) UnmarshalBinary(buf []byte) error {
 	if pageType&DB_DIRECTORY_PAGE == 0 {
 		panic("Invalid page type")
 	}
-	page.page.UnmarshalBinary(buf)
+	page.page.Unmarshal(buf)
 	page.directoryNumber = binary.LittleEndian.Uint16(page.header[DIRECTORY_NUMBER_START:DIRECTORY_NUMBER_END])
 	page.allocatedPageCount = binary.LittleEndian.Uint16(page.header[ALLOCATED_PAGE_COUNT_START:ALLOCATED_PAGE_COUNT_END])
 	page.freePageCount = binary.LittleEndian.Uint16(page.header[FREE_PAGE_COUNT_START:FREE_PAGE_COUNT_END])
@@ -90,28 +90,23 @@ func (page *DBDirectoryPage) UnmarshalBinary(buf []byte) error {
 	return nil
 }
 
-type DBDirectory interface {
-	AllocatePage() (pageid, error)
-	DeallocatePage(id pageid) error
-}
-
 type directory struct {
-	diskMgr        DiskMgr
+	pageStore      PageStore
 	directoryPages []*DBDirectoryPage
 }
 
-func NewDBDirectory(diskMgr DiskMgr) DBDirectory {
+func NewDBDirectory(pageStore PageStore) PageDirectory {
 	dir := &directory{
-		diskMgr:        diskMgr,
+		pageStore:      pageStore,
 		directoryPages: make([]*DBDirectoryPage, 0, MAX_DIRECTORY),
 	}
 
 	page := NewDBDirectoryPage(0)
-	err := dir.diskMgr.ReadPage(DIRECTORY_0_PAGE_ID, page)
+	err := dir.pageStore.Get(DIRECTORY_0_PAGE_ID, page)
 	if err != nil {
 		if err == io.EOF {
-			// new file, write first directory page
-			if err := dir.diskMgr.WritePage(DIRECTORY_0_PAGE_ID, page); err != nil {
+			// new store, write first directory page
+			if err := dir.pageStore.Set(DIRECTORY_0_PAGE_ID, page); err != nil {
 				panic(fmt.Sprintf("NewDBDirectory, err: %s", err))
 			}
 		} else {
@@ -121,27 +116,19 @@ func NewDBDirectory(diskMgr DiskMgr) DBDirectory {
 
 	return dir
 }
-//
-//func (dir *directory) getDirectoryPage(directoryNumber int, buf []byte) error {
-//	if len(buf) != int(PAGE_SIZE) {
-//		panic("Invalid page buffer")
-//	}
-//	var id pageid
-//	if directoryNumber == 0 {
-//		id = DIRECTORY_0_PAGE_ID
-//	} else {
-//		id = pageid(DIRECTORY_SIZE * directoryNumber)
-//	}
-//	if err := dir.diskMgr.ReadPage(id, buf); err != nil {
-//		panic(fmt.Sprintf("dir.getDirectoryPage, err: %s", err))
-//	}
-//	return nil
-//}
 
-func (dir *directory) AllocatePage() (pageid, error) {
+func (dir *directory) AllocatePage() (PageID, error) {
 	return 0, nil
 }
 
-func (dir *directory) DeallocatePage(id pageid) error {
+func (dir *directory) DeallocatePage(id PageID) error {
 	return nil
+}
+
+func (dir *directory) Count() int64 {
+	return 0
+}
+
+func (dir *directory) AllocatedCount() int64 {
+	return 0
 }

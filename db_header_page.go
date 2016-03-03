@@ -4,7 +4,7 @@ import "encoding/binary"
 
 type DBHeaderPage struct {
 	page
-	lastPageId pageid // total number of pages in file
+	lastPageId PageID // total number of pages in file
 }
 
 const (
@@ -15,7 +15,7 @@ const (
 func NewDBHeaderPage() *DBHeaderPage {
 	page := &DBHeaderPage{
 		page: page{
-			id:   0,
+			id:       0,
 			pagetype: DB_HEADER_PAGE,
 			bytes:    make([]byte, PAGE_SIZE, PAGE_SIZE),
 		},
@@ -29,7 +29,7 @@ func NewDBHeaderPage() *DBHeaderPage {
 // The page is encoded as a []byte PAGE_SIZE long, ready for serialisation.
 func (page *DBHeaderPage) MarshalPage() ([]byte, error) {
 	page.pagetype = DB_HEADER_PAGE
-	page.page.MarshalBinary()
+	page.page.Marshal()
 	binary.LittleEndian.PutUint64(page.header[LAST_PAGE_ID_START:LAST_PAGE_ID_END], uint64(page.lastPageId))
 	return page.bytes, nil
 }
@@ -43,10 +43,10 @@ func (page *DBHeaderPage) UnmarshalBinary(buf []byte) error {
 	}
 	// check page type, panic if wrong
 	pageType := buf[PAGE_TYPE_BYTE]
-	if pageType & DB_HEADER_PAGE == 0 {
+	if pageType&DB_HEADER_PAGE == 0 {
 		panic("Invalid page type")
 	}
-	page.page.UnmarshalBinary(buf)
-	page.lastPageId = pageid(binary.LittleEndian.Uint64(page.header[LAST_PAGE_ID_START:LAST_PAGE_ID_END]))
+	page.page.Unmarshal(buf)
+	page.lastPageId = PageID(binary.LittleEndian.Uint64(page.header[LAST_PAGE_ID_START:LAST_PAGE_ID_END]))
 	return nil
 }
