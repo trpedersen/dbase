@@ -9,7 +9,7 @@ import (
 type Heap struct {
 	store      PageStore
 	headerPage *HeapHeaderPage
-	lastPage   *DataPage
+	lastPage   *HeapPage
 	pagePool   *sync.Pool
 }
 
@@ -99,7 +99,7 @@ func (heap *Heap) Write(buf []byte) (RID, error) {
 
 func (heap *Heap) Get(rid RID, buf []byte) error {
 
-	page := heap.pagePool.Get().(*DataPage)
+	page := heap.pagePool.Get().(*HeapPage)
 	defer heap.pagePool.Put(page)
 	page.Clear()
 	if err := heap.store.Get(rid.PageID, page); err != nil {
@@ -108,6 +108,19 @@ func (heap *Heap) Get(rid RID, buf []byte) error {
 	err := page.GetRecord(rid.Slot, buf)
 	return err
 }
+
+func (heap *Heap) Set(rid RID, buf []byte) error {
+
+	page := heap.pagePool.Get().(*HeapPage)
+	defer heap.pagePool.Put(page)
+	page.Clear()
+	if err := heap.store.Get(rid.PageID, page); err != nil {
+		return err
+	}
+	err := page.SetRecord(rid.Slot, buf)
+	return err
+}
+
 
 //func (heap *Heap) Write(buf []byte) error {
 //	len := len(buf)

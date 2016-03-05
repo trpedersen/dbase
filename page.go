@@ -19,7 +19,7 @@ const (
 	// Page types:
 	DB_HEADER_PAGE    = 0x01
 	DB_DIRECTORY_PAGE = 0x02
-	DATA_PAGE         = 0x03
+	HEAP_PAGE = 0x03
 	HEAP_HEADER_PAGE  = 0x04
 )
 
