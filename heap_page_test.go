@@ -7,7 +7,7 @@ import (
 )
 
 func TestFillPage(t *testing.T) {
-	page := dbase.NewDataPage()
+	page := dbase.NewHeapPage()
 	recLen := 12
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
 		record1 := make([]byte, recLen)
@@ -27,7 +27,7 @@ func TestFillPage(t *testing.T) {
 }
 
 func TestMarshalBinary(t *testing.T) {
-	page1 := dbase.NewDataPage()
+	page1 := dbase.NewHeapPage()
 	recLen := 10
 	for i := 0; page1.GetFreeSpace() > recLen; i++ {
 		record := make([]byte, recLen)
@@ -44,19 +44,19 @@ func TestMarshalBinary(t *testing.T) {
 		t.Fatalf("page1.MarshalBinary, err: %s", err)
 	}
 
-	page2 := dbase.NewDataPage()
+	page2 := dbase.NewHeapPage()
 
 	err = page2.UnmarshalBinary(pageBytes)
 	if err != nil {
 		t.Fatalf("page2.UnmarshalBinary, err: %s", err)
 	}
 
-	if page1.GetRecordCount() != page2.GetRecordCount() {
-		t.Errorf(".GetRecordCount, expecting: %d, got: %d", page1.GetRecordCount(), page2.GetRecordCount())
+	if page1.GetSlotCount() != page2.GetSlotCount() {
+		t.Errorf(".GetRecordCount, expecting: %d, got: %d", page1.GetSlotCount(), page2.GetSlotCount())
 	}
 	record1 := make([]byte, recLen)
 	record2 := make([]byte, recLen)
-	for i := int16(0); i < page1.GetRecordCount(); i++ {
+	for i := int16(0); i < page1.GetSlotCount(); i++ {
 		err := page1.GetRecord(i, record1)
 		if err != nil {
 			t.Fatalf("page1.GetRecord, err: %s", err)
@@ -73,7 +73,7 @@ func TestMarshalBinary(t *testing.T) {
 }
 
 func BenchmarkFillPage(b *testing.B) {
-	page := dbase.NewDataPage()
+	page := dbase.NewHeapPage()
 	recLen := 10
 	record1 := make([]byte, recLen)
 	record2 := make([]byte, recLen)

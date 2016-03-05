@@ -8,8 +8,8 @@ import (
 
 type Heap struct {
 	store      PageStore
-	headerPage *HeapHeaderPage
-	lastPage   *HeapPage
+	headerPage HeapHeaderPage
+	lastPage   HeapPage
 	pagePool   *sync.Pool
 }
 
@@ -18,10 +18,10 @@ func NewHeap(store PageStore) *Heap {
 		store: store,
 		//dir:        dir,
 		headerPage: NewHeapHeaderPage(),
-		lastPage:   NewDataPage(),
+		lastPage:   NewHeapPage(),
 		pagePool: &sync.Pool{
 			New: func() interface{} {
-				return NewDataPage()
+				return NewHeapPage()
 			},
 		},
 	}
@@ -33,10 +33,12 @@ func NewHeap(store PageStore) *Heap {
 		if err != nil {
 			panic(fmt.Sprintf("NewHeap init, err: %s", err))
 		}
-		heap.headerPage.lastPageId, err = store.Append(heap.lastPage)
+		var id PageID
+		id, err = store.Append(heap.lastPage)
 		if err != nil {
 			panic(fmt.Sprintf("NewHeap init, err: %s", err))
 		}
+		heap.headerPage.SetLastPageID(id)
 		if err := store.Set(0, heap.headerPage); err != nil {
 			panic(fmt.Sprintf("NewHeap, err: %s", err))
 		}
@@ -46,7 +48,7 @@ func NewHeap(store PageStore) *Heap {
 		panic(fmt.Sprintf("NewHeap, err: %s", err))
 	}
 	// get the last page
-	if err := heap.store.Get(heap.headerPage.lastPageId, heap.lastPage); err != nil {
+	if err := heap.store.Get(heap.headerPage.GetLastPageID(), heap.lastPage); err != nil {
 		panic(fmt.Sprintf("NewHeap, err: %s", err))
 	}
 
@@ -55,7 +57,7 @@ func NewHeap(store PageStore) *Heap {
 
 // Count returns the number of records in the Heap.
 func (heap *Heap) Count() int64 {
-	return heap.headerPage.recordCount
+	return heap.headerPage.GetRecordCount()
 }
 
 func (heap *Heap) Write(buf []byte) (RID, error) {
@@ -73,9 +75,11 @@ func (heap *Heap) Write(buf []byte) (RID, error) {
 	if len > int(free) {
 		// insufficient space, so make a new page
 		heap.lastPage.Clear()
-		if heap.headerPage.lastPageId, err = heap.store.Append(heap.lastPage); err != nil {
+		var id PageID
+		if id, err = heap.store.Append(heap.lastPage); err != nil {
 			return rid, err
 		}
+		heap.headerPage.SetLastPageID(id)
 		// update header page
 		if err = heap.store.Set(0, heap.headerPage); err != nil {
 			return rid, err
@@ -84,14 +88,15 @@ func (heap *Heap) Write(buf []byte) (RID, error) {
 	if slot, err = heap.lastPage.AddRecord(buf); err != nil {
 		return rid, err
 	}
-	if err := heap.store.Set(heap.headerPage.lastPageId, heap.lastPage); err != nil {
+	if err := heap.store.Set(heap.headerPage.GetLastPageID(), heap.lastPage); err != nil {
 		return rid, err
 	}
-	heap.headerPage.recordCount += 1
+	heap.headerPage.SetRecordCount( heap.headerPage.GetRecordCount() + 1)
+
 	if err := heap.store.Set(0, heap.headerPage); err != nil {
 		return rid, err
 	}
-	rid.PageID = heap.headerPage.lastPageId
+	rid.PageID = heap.headerPage.GetLastPageID()
 	rid.Slot = slot
 
 	return rid, nil
@@ -99,7 +104,7 @@ func (heap *Heap) Write(buf []byte) (RID, error) {
 
 func (heap *Heap) Get(rid RID, buf []byte) error {
 
-	page := heap.pagePool.Get().(*HeapPage)
+	page := heap.pagePool.Get().(HeapPage)
 	defer heap.pagePool.Put(page)
 	page.Clear()
 	if err := heap.store.Get(rid.PageID, page); err != nil {
@@ -111,7 +116,7 @@ func (heap *Heap) Get(rid RID, buf []byte) error {
 
 func (heap *Heap) Set(rid RID, buf []byte) error {
 
-	page := heap.pagePool.Get().(*HeapPage)
+	page := heap.pagePool.Get().(HeapPage)
 	defer heap.pagePool.Put(page)
 	page.Clear()
 	if err := heap.store.Get(rid.PageID, page); err != nil {
@@ -120,7 +125,6 @@ func (heap *Heap) Set(rid RID, buf []byte) error {
 	err := page.SetRecord(rid.Slot, buf)
 	return err
 }
-
 
 //func (heap *Heap) Write(buf []byte) error {
 //	len := len(buf)

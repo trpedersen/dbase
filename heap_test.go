@@ -19,7 +19,7 @@ func Test_CreateHeap(t *testing.T) {
 
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
-	defer func(){
+	defer func() {
 		store.Close()
 		os.Remove(store.Path())
 	}()
@@ -47,7 +47,7 @@ func Test_HeapWrite(t *testing.T) {
 
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
-	defer func(){
+	defer func() {
 		store.Close()
 		os.Remove(store.Path())
 	}()

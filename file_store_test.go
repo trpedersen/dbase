@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/trpedersen/dbase"
 	"bytes"
+	"github.com/trpedersen/dbase"
 )
 
 //var store dbase.FileStore
@@ -125,7 +125,7 @@ func TestSetGet(t *testing.T) {
 		t.Fatal("expected db")
 	}
 
-	page := dbase.NewDataPage()
+	page := dbase.NewHeapPage()
 
 	record1 := []byte("TESTING")
 	var id dbase.PageID
@@ -151,8 +151,8 @@ func TestSetGet(t *testing.T) {
 		t.Fatalf("page.GetRecord, expected: %s, got: %s", record1, record2)
 	}
 
-
 }
+
 // tempfile returns a temporary file path.
 func tempfile() string {
 	f, err := ioutil.TempFile("", "db-")

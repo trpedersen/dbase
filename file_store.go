@@ -52,7 +52,6 @@ func Open(path string, mode os.FileMode, options *FileStoreOptions) (FileStore, 
 		store.readOnly = true
 	}
 
-
 	var err error
 	// open the file; create a new file if it doesn't exist
 
