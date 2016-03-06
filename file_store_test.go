@@ -20,7 +20,11 @@ import (
 func TestOpen(t *testing.T) {
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
-	defer os.Remove(store.Path())
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
 	if err != nil {
 		t.Fatal(err)
 	} else if store == nil {
@@ -56,7 +60,11 @@ func TestCreateAndReopenDB(t *testing.T) {
 
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
-	defer os.Remove(store.Path())
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
 	if err != nil {
 		t.Fatal(err)
 	} else if store == nil {
@@ -89,7 +97,11 @@ func TestNewPages(t *testing.T) {
 
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
-	defer os.Remove(store.Path())
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
 	if err != nil {
 		t.Fatal(err)
 	} else if store == nil {
@@ -118,7 +130,12 @@ func TestSetGet(t *testing.T) {
 
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
-	defer os.Remove(store.Path())
+
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
 	if err != nil {
 		t.Fatal(err)
 	} else if store == nil {
@@ -162,7 +179,7 @@ func TestSetGet(t *testing.T) {
 
 // tempfile returns a temporary file path.
 func tempfile() string {
-	f, err := ioutil.TempFile("", "db-")
+	f, err := ioutil.TempFile("d:/tmp", "db-")
 	if err != nil {
 		panic(err)
 	}

@@ -3,18 +3,25 @@ package dbase
 import (
 	"fmt"
 	"sync"
-	//"log"
 )
+//
+type Heap interface {
+	Count() int64 // Count of records in heap
+	Write(buf []byte) (RID, error)
+	Get(rid RID, buf []byte) error
+	Set(rid RID, buf []byte) error
+	Delete(rid RID) error
+}
 
-type Heap struct {
+type heap struct {
 	store      PageStore
 	headerPage HeapHeaderPage
 	lastPage   HeapPage
 	pagePool   *sync.Pool
 }
 
-func NewHeap(store PageStore) *Heap {
-	heap := &Heap{
+func NewHeap(store PageStore) Heap {
+	heap := &heap{
 		store: store,
 		//dir:        dir,
 		headerPage: NewHeapHeaderPage(),
@@ -56,11 +63,11 @@ func NewHeap(store PageStore) *Heap {
 }
 
 // Count returns the number of records in the Heap.
-func (heap *Heap) Count() int64 {
+func (heap *heap) Count() int64 {
 	return heap.headerPage.GetRecordCount()
 }
 
-func (heap *Heap) Write(buf []byte) (RID, error) {
+func (heap *heap) Write(buf []byte) (RID, error) {
 	len := len(buf)
 	var err error
 	var rid RID
@@ -97,7 +104,7 @@ func (heap *Heap) Write(buf []byte) (RID, error) {
 	return rid, nil
 }
 
-func (heap *Heap) Get(rid RID, buf []byte) error {
+func (heap *heap) Get(rid RID, buf []byte) error {
 
 	page := heap.pagePool.Get().(HeapPage)
 	defer heap.pagePool.Put(page)
@@ -109,7 +116,7 @@ func (heap *Heap) Get(rid RID, buf []byte) error {
 	return err
 }
 
-func (heap *Heap) Set(rid RID, buf []byte) error {
+func (heap *heap) Set(rid RID, buf []byte) error {
 
 	page := heap.pagePool.Get().(HeapPage)
 	defer heap.pagePool.Put(page)
@@ -118,6 +125,25 @@ func (heap *Heap) Set(rid RID, buf []byte) error {
 		return err
 	}
 	err := page.SetRecord(rid.Slot, buf)
+	if err != nil {
+		return err
+	}
+	err = heap.store.Set(rid.PageID, page)
+	return err
+}
+
+func (heap *heap) Delete(rid RID) error {
+	page := heap.pagePool.Get().(HeapPage)
+	defer heap.pagePool.Put(page)
+	page.Clear()
+	if err := heap.store.Get(rid.PageID, page); err != nil {
+		return err
+	}
+	err := page.DeleteRecord(rid.Slot)
+	if err != nil {
+		return err
+	}
+	err = heap.store.Set(rid.PageID, page)
 	return err
 }
 

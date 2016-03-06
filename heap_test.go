@@ -4,7 +4,6 @@ import (
 	"github.com/trpedersen/dbase"
 	"os"
 	"testing"
-	//"log"
 	"bytes"
 	randstr "github.com/trpedersen/rand"
 
@@ -59,11 +58,11 @@ func Test_HeapWrite(t *testing.T) {
 	}
 	heap := dbase.NewHeap(store)
 
-	heapRuns := 10000
+	heapRuns := 100000
 
 	rand.Seed(2323)
 	for i := 0; i < heapRuns; i++ {
-		l := rand.Intn(1023)
+		l := rand.Intn(10)
 		record1 := []byte(randstr.RandStr(l, "alphanum"))
 		record2 := make([]byte, len(record1))
 
@@ -97,7 +96,6 @@ func Test_HeapWrite(t *testing.T) {
 	}
 }
 
-
 func Test_HeapDelete(t *testing.T) {
 	path := tempfile()
 	store, err := dbase.Open(path, 0666, nil)
@@ -118,6 +116,15 @@ func Test_HeapDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("heap.Write, err: %s", err)
 	}
-
-
+	err = heap.Delete(rid)
+	if err != nil {
+		t.Fatalf("heap.Delete, err: %s", err)
+	}
+	err = heap.Get(rid, record1)
+	if err == nil {
+		t.Fatalf("Heap delete, expected: RECORD_DELETED, got: nil")
+	}
+	if _, ok := err.(dbase.RecordDeleted); !ok {
+		t.Fatalf("Heap delete, expected: RECORD_DELETED, got: %s", err)
+	}
 }

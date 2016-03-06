@@ -5,7 +5,7 @@ package dbase
 import ()
 
 const (
-	PAGE_SIZE        = int16(8192)                 // PAGE_SIZE is typically the same as the filesystem blocksize
+	PAGE_SIZE        = int16(256)                 // PAGE_SIZE is typically the same as the filesystem blocksize
 	PAGE_HEADER_LEN  = 56                          // bytes
 	MAX_PAGE_PAYLOAD = PAGE_SIZE - PAGE_HEADER_LEN // Maximum page payload bytes
 
