@@ -96,3 +96,28 @@ func Test_HeapWrite(t *testing.T) {
 		t.Fatalf("Record count, expected: %d, got: %d", heapRuns, count)
 	}
 }
+
+
+func Test_HeapDelete(t *testing.T) {
+	path := tempfile()
+	store, err := dbase.Open(path, 0666, nil)
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
+	if err != nil {
+		t.Fatal(err)
+	} else if store == nil {
+		t.Fatal("expected db")
+	}
+	heap := dbase.NewHeap(store)
+
+	record1 := []byte("DELETE ME")
+	rid, err := heap.Write(record1)
+	if err != nil {
+		t.Fatalf("heap.Write, err: %s", err)
+	}
+
+
+}

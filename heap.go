@@ -62,11 +62,6 @@ func (heap *Heap) Count() int64 {
 
 func (heap *Heap) Write(buf []byte) (RID, error) {
 	len := len(buf)
-	if len > MAX_PAGE_PAYLOAD {
-		buf = buf[0:MAX_PAGE_PAYLOAD]
-		len = MAX_PAGE_PAYLOAD
-	}
-
 	var err error
 	var rid RID
 	var slot int16

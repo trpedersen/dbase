@@ -133,20 +133,27 @@ func TestSetGet(t *testing.T) {
 	if id, err = store.Append(page); err != nil {
 		t.Fatalf("store.Append, err: %s", err)
 	}
+	page.SetID(id)
+	//log.Println("A", page)
 	if slot, err = page.AddRecord(record1); err != nil {
 		t.Fatalf("page, err: %s", err)
 	}
+	//log.Println("B", slot, page)
+
 	if err = store.Set(id, page); err != nil {
 		t.Fatalf("store.Set, err: %s", err)
 	}
 	page.Clear()
+	//log.Println("C", page)
 	if err = store.Get(id, page); err != nil {
 		t.Fatalf("store.Get, err: %s", err)
 	}
+	//log.Println("D", page)
 	record2 := make([]byte, len(record1))
 	if err = page.GetRecord(slot, record2); err != nil {
 		t.Fatalf("page.GetRecord, err: %s", err)
 	}
+	//log.Println(slot, page, record2)
 	if bytes.Compare(record1, record2) != 0 {
 		t.Fatalf("page.GetRecord, expected: %s, got: %s", record1, record2)
 	}

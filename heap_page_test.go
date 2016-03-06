@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/trpedersen/dbase"
 	"testing"
+	"log"
 )
 
 func TestFillPage(t *testing.T) {
@@ -20,6 +21,7 @@ func TestFillPage(t *testing.T) {
 		} else if err := page.GetRecord(recordNumber, record2); err != nil {
 			t.Fatalf("page.GetRecord, err: %s", err)
 		} else if bytes.Compare(record1, record2) != 0 {
+			log.Println("TestFillPage", recordNumber, page)
 			t.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
 			break
 		}
@@ -56,7 +58,7 @@ func TestMarshalBinary(t *testing.T) {
 	}
 	record1 := make([]byte, recLen)
 	record2 := make([]byte, recLen)
-	for i := int16(0); i < page1.GetSlotCount(); i++ {
+	for i := int16(1); i < page1.GetSlotCount(); i++ {
 		err := page1.GetRecord(i, record1)
 		if err != nil {
 			t.Fatalf("page1.GetRecord, err: %s", err)

@@ -5,9 +5,9 @@ package dbase
 import ()
 
 const (
-	PAGE_SIZE        = int16(8192) // PAGE_SIZE is typically the same as the filesystem blocksize
-	PAGE_HEADER_LEN  = 192         // bytes
-	MAX_PAGE_PAYLOAD = 8000        // Maximum page payload bytes
+	PAGE_SIZE        = int16(8192)                 // PAGE_SIZE is typically the same as the filesystem blocksize
+	PAGE_HEADER_LEN  = 56                          // bytes
+	MAX_PAGE_PAYLOAD = PAGE_SIZE - PAGE_HEADER_LEN // Maximum page payload bytes
 
 	// Page buffer offsets for page fields
 	PAGE_ID_OFFSET   = 0
@@ -25,6 +25,7 @@ type PageType byte
 
 type Page interface {
 	GetID() PageID
+	SetID(id PageID) error
 	GetType() PageType
 	MarshalBinary() ([]byte, error)
 	UnmarshalBinary(buf []byte) error
@@ -39,6 +40,11 @@ type page struct {
 
 func (page *page) GetID() PageID {
 	return page.id
+}
+
+func (page *page) SetID(id PageID) error {
+	page.id = id
+	return nil
 }
 
 func (page *page) GetType() PageType {
