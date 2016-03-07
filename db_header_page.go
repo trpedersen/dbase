@@ -1,4 +1,5 @@
 package dbase
+
 //
 //import "encoding/binary"
 //

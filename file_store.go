@@ -2,6 +2,7 @@ package dbase
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -28,6 +29,11 @@ type fileStore struct {
 	lastPageId PageID
 	count      int64
 	l          sync.Mutex
+	gets       int
+	sets       int
+	news       int
+	appends    int
+	wipes      int
 }
 
 func Open(path string, mode os.FileMode, options *FileStoreOptions) (FileStore, error) {
@@ -94,6 +100,7 @@ func (store *fileStore) Get(id PageID, page Page) error {
 	buf := store.bufferPool.Get().([]byte)
 	defer store.bufferPool.Put(buf)
 
+	store.gets += 1
 	if n, err := store.file.ReadAt(buf, int64(id)*int64(PAGE_SIZE)); err != nil || n != int(PAGE_SIZE) {
 		return err
 	} else {
@@ -116,6 +123,7 @@ func (store *fileStore) Set(id PageID, page Page) error {
 	} else if _, err := store.file.WriteAt(buf, int64(id)*int64(PAGE_SIZE)); err != nil {
 		return err
 	}
+	store.sets += 1
 	// TODO: filestore.Set - implement algorithm to do a file.Sync at set intervals
 	return nil //store.file.Sync()
 }
@@ -137,6 +145,7 @@ func (store *fileStore) New() (PageID, error) {
 	}
 	store.lastPageId += 1
 	store.count += 1
+	store.news += 1
 	return PageID(store.lastPageId), nil
 }
 
@@ -157,6 +166,7 @@ func (store *fileStore) Append(page Page) (PageID, error) {
 	store.lastPageId += 1
 	store.count += 1
 	//store.file.Sync()
+	store.appends += 1
 	return PageID(store.lastPageId), nil
 }
 
@@ -178,10 +188,15 @@ func (store *fileStore) Wipe(id PageID) error {
 	if _, err := store.file.WriteAt(buf, int64(id)*int64(PAGE_SIZE)); err != nil {
 		return err
 	}
+	store.wipes += 1
 	return nil //store.file.Sync()
 }
 
 // Count returns the total number of pages in the store.
 func (store *fileStore) Count() int64 {
 	return store.count
+}
+
+func (store *fileStore) Statistics() string {
+	return fmt.Sprintf("file store: gets: %d, sets: %d, news: %d, appends: %d", store.gets, store.sets, store.news, store.appends)
 }

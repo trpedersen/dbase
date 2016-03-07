@@ -7,6 +7,8 @@ import (
 	"github.com/trpedersen/dbase"
 	randstr "github.com/trpedersen/rand"
 
+	"bytes"
+	"log"
 	"math/rand"
 )
 
@@ -16,11 +18,11 @@ const (
 
 func Test_CreateHeap(t *testing.T) {
 
-	path := tempfile()
-	store, err := dbase.Open(path, 0666, nil)
+	//path := tempfile()
+	store, err := dbase.NewMemoryStore() //dbase.Open(path, 0666, nil)
 	defer func() {
 		store.Close()
-		os.Remove(store.Path())
+		//os.Remove(store.Path())
 	}()
 
 	if err != nil {
@@ -44,12 +46,13 @@ func Test_CreateHeap(t *testing.T) {
 
 func Test_HeapWrite(t *testing.T) {
 
-	path := tempfile()
-	store, err := dbase.Open(path, 0666, nil)
-	defer func() {
-		store.Close()
-		os.Remove(store.Path())
-	}()
+	//path := tempfile()
+	//store, err := dbase.Open(path, 0666, nil)
+	//defer func() {
+	//	store.Close()
+	//	os.Remove(store.Path())
+	//}()
+	store, err := dbase.NewMemoryStore()
 
 	if err != nil {
 		t.Fatal(err)
@@ -58,15 +61,15 @@ func Test_HeapWrite(t *testing.T) {
 	}
 	heap := dbase.NewHeap(store)
 
-	heapRuns := 100000
+	heapRuns := 1000000
 
 	rand.Seed(2323)
-	l := rand.Intn(10)
+	l := rand.Intn(1000)
 	if l == 0 {
 		l = 1
 	}
 	record1 := []byte(randstr.RandStr(l, "alphanum"))
-	//record2 := make([]byte, len(record1))
+	record2 := make([]byte, len(record1))
 
 	for i := 0; i < heapRuns; i++ {
 
@@ -77,27 +80,33 @@ func Test_HeapWrite(t *testing.T) {
 		if rid.PageID == 0 {
 			t.Fatalf("RID zero")
 		}
-		//if err = heap.Get(rid, record2); err != nil {
-		//	t.Fatalf("heap.Get, err: %s", err)
-		//}
-		//if bytes.Compare(record1, record2) != 0 {
-		//	t.Fatalf("bytes.Compare: expected %t, got %t", record1, record2)
-		//	break
-		//}
+		if err = heap.Get(rid, record2); err != nil {
+			t.Fatalf("heap.Get, err: %s", err)
+		}
+		if bytes.Compare(record1, record2) != 0 {
+			t.Fatalf("bytes.Compare: expected %t, got %t", record1, record2)
+			break
+		}
 	}
 	count := heap.Count()
 	if count != int64(heapRuns) {
 		t.Fatalf("Record count, expected: %d, got: %d", heapRuns, count)
 	}
 
-	store.Close()
-	store, err = dbase.Open(path, 0666, nil)
-	heap = dbase.NewHeap(store)
+	log.Println(heap.Statistics())
+	log.Println(store.Statistics())
+
+	//store.Close()
+	//store, err = dbase.Open(path, 0666, nil)
+	//heap = dbase.NewHeap(store)
 
 	count = heap.Count()
 	if count != int64(heapRuns) {
 		t.Fatalf("Record count, expected: %d, got: %d", heapRuns, count)
 	}
+
+	log.Println(heap.Statistics())
+	log.Println(store.Statistics())
 }
 
 func Test_HeapDelete(t *testing.T) {

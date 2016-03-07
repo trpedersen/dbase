@@ -43,7 +43,7 @@ func (page *heapHeaderPage) GetRecordCount() int64 {
 	return page.recordCount
 }
 
-func (page *heapHeaderPage) SetRecordCount(count int64){
+func (page *heapHeaderPage) SetRecordCount(count int64) {
 	page.recordCount = count
 }
 
@@ -76,7 +76,7 @@ func (page *heapHeaderPage) UnmarshalBinary(buf []byte) error {
 	}
 	// check page type, panic if wrong
 	pageType := PageType(buf[PAGE_TYPE_OFFSET])
-	if pageType != PAGE_TYPE_HEAP_HEADER  {
+	if pageType != PAGE_TYPE_HEAP_HEADER {
 		panic("Invalid page type")
 	}
 	copy(page.bytes, buf)

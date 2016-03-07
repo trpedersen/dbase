@@ -3,7 +3,6 @@ package dbase
 import (
 	"encoding/binary"
 	"fmt"
-	"sort"
 	"sync"
 )
 
@@ -192,7 +191,7 @@ func (page *heapPage) MarshalBinary() ([]byte, error) {
 
 	binary.LittleEndian.PutUint16(page.header[SLOT_COUNT_OFFSET:], uint16(len(page.slots)))
 
-	sort.Sort(SlotByID(page.slots))
+	//sort.Sort(SlotByID(page.slots))
 	for i, slot := range page.slots {
 		offset := SLOT_TABLE_LEN - ((int16(i) + 1) * SLOT_TABLE_ENTRY_LEN)
 		page.slotTable[offset] = slot.flags

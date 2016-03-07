@@ -1,10 +1,11 @@
 package dbase
 
 import (
+	"errors"
 	"fmt"
 	"sync"
-	"errors"
 )
+
 //
 type Heap interface {
 	Count() int64 // Count of records in heap
@@ -12,6 +13,7 @@ type Heap interface {
 	Get(rid RID, buf []byte) error
 	Set(rid RID, buf []byte) error
 	Delete(rid RID) error
+	Statistics() string
 }
 
 type heap struct {
@@ -19,6 +21,10 @@ type heap struct {
 	headerPage HeapHeaderPage
 	lastPage   HeapPage
 	pagePool   *sync.Pool
+	writes     int
+	gets       int
+	sets       int
+	deletes    int
 }
 
 func NewHeap(store PageStore) Heap {
@@ -100,13 +106,15 @@ func (heap *heap) Write(buf []byte) (RID, error) {
 	if err := heap.store.Set(heap.headerPage.GetLastPageID(), heap.lastPage); err != nil {
 		return rid, err
 	}
-	heap.headerPage.SetRecordCount( heap.headerPage.GetRecordCount() + 1)
+	heap.headerPage.SetRecordCount(heap.headerPage.GetRecordCount() + 1)
 
 	if err := heap.store.Set(0, heap.headerPage); err != nil {
 		return rid, err
 	}
 	rid.PageID = heap.headerPage.GetLastPageID()
 	rid.Slot = slot
+
+	heap.writes += 1
 
 	return rid, nil
 }
@@ -120,6 +128,7 @@ func (heap *heap) Get(rid RID, buf []byte) error {
 		return err
 	}
 	err := page.GetRecord(rid.Slot, buf)
+	heap.gets += 1
 	return err
 }
 
@@ -136,6 +145,9 @@ func (heap *heap) Set(rid RID, buf []byte) error {
 		return err
 	}
 	err = heap.store.Set(rid.PageID, page)
+
+	heap.sets += 1
+
 	return err
 }
 
@@ -151,7 +163,12 @@ func (heap *heap) Delete(rid RID) error {
 		return err
 	}
 	err = heap.store.Set(rid.PageID, page)
+	heap.deletes += 1
 	return err
+}
+
+func (heap *heap) Statistics() string {
+	return fmt.Sprintf("heap: writes: %d, gets: %d, sets: %d, deletes: %d", heap.writes, heap.gets, heap.sets, heap.deletes)
 }
 
 //func (heap *Heap) Write(buf []byte) error {
