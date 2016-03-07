@@ -3,6 +3,7 @@ package dbase
 import (
 	"fmt"
 	"sync"
+	"errors"
 )
 //
 type Heap interface {
@@ -68,10 +69,16 @@ func (heap *heap) Count() int64 {
 }
 
 func (heap *heap) Write(buf []byte) (RID, error) {
-	len := len(buf)
+
 	var err error
 	var rid RID
 	var slot int16
+
+	if len(buf) == 0 {
+		return rid, errors.New("Zero length record")
+	}
+
+	len := len(buf)
 
 	free := heap.lastPage.GetFreeSpace()
 	if len > int(free) {

@@ -173,7 +173,7 @@ func NewHeapPage() HeapPage {
 	}
 
 	page.header = page.bytes[0:PAGE_HEADER_LEN]
-	page.slotTable = page.bytes[SLOT_TABLE_OFFSET:SLOT_TABLE_OFFSET+SLOT_TABLE_LEN]
+	page.slotTable = page.bytes[SLOT_TABLE_OFFSET : SLOT_TABLE_OFFSET+SLOT_TABLE_LEN]
 	page.slots[0] = NewFreeSpaceSlot()
 	page.slotCount = 1
 
@@ -225,7 +225,7 @@ func (page *heapPage) UnmarshalBinary(buf []byte) error {
 	copy(page.bytes, buf)
 
 	page.header = page.bytes[0:PAGE_HEADER_LEN]
-	page.slotTable = page.bytes[SLOT_TABLE_OFFSET:SLOT_TABLE_OFFSET+SLOT_TABLE_LEN]
+	page.slotTable = page.bytes[SLOT_TABLE_OFFSET : SLOT_TABLE_OFFSET+SLOT_TABLE_LEN]
 	//log.Println("unm", page.slotTable)
 
 	page.id = PageID(binary.LittleEndian.Uint64(page.header[PAGE_ID_OFFSET:]))
@@ -371,6 +371,7 @@ func (page *heapPage) reallocateSlot(slot *Slot, requestedLength int16) error {
 
 // TODO: implement
 func (page *heapPage) compact() error {
+	//log.Println("compact A", page.slots[0].offset, page.slots[0].length)
 
 	var slot *Slot
 
@@ -404,8 +405,10 @@ func (page *heapPage) compact() error {
 		}
 	}
 	page.slots[0].offset = offset
-	page.slots[0].length = SLOT_TABLE_LEN - offset - (int16(len(page.slots) + 1) * SLOT_TABLE_LEN)
+	page.slots[0].length = SLOT_TABLE_LEN - offset - (int16(len(page.slots)+1) * SLOT_TABLE_ENTRY_LEN)
 	copy(page.slotTable, buf)
+
+	//log.Println("compact B", page.slots[0].offset, page.slots[0].length)
 	return nil
 }
 

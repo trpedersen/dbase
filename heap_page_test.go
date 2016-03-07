@@ -2,14 +2,15 @@ package dbase_test
 
 import (
 	"bytes"
-	"github.com/trpedersen/dbase"
-	"testing"
 	"log"
+	"testing"
+
+	"github.com/trpedersen/dbase"
 )
 
 func TestFillPage(t *testing.T) {
 	page := dbase.NewHeapPage()
-	recLen := 12
+	recLen := 107
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
 		record1 := make([]byte, recLen)
 		record2 := make([]byte, recLen)
@@ -30,7 +31,7 @@ func TestFillPage(t *testing.T) {
 
 func TestMarshalBinary(t *testing.T) {
 	page1 := dbase.NewHeapPage()
-	recLen := 10
+	recLen := 107
 	for i := 0; page1.GetFreeSpace() > recLen; i++ {
 		record := make([]byte, recLen)
 		for j := 0; j < recLen; j++ {
@@ -72,6 +73,43 @@ func TestMarshalBinary(t *testing.T) {
 		}
 	}
 
+}
+
+func TestDeleteRecords(t *testing.T) {
+	page := dbase.NewHeapPage()
+	//log.Println(page.GetFreeSpace(), page.GetSlotCount())
+	recLen := 97
+	for i := 0; page.GetFreeSpace() > recLen; i++ {
+		record1 := make([]byte, recLen)
+		record2 := make([]byte, recLen)
+		for j := int16(0); j < int16(recLen); j++ {
+			record1[j] = byte(i)
+		}
+		if recordNumber, err := page.AddRecord(record1); err != nil {
+			t.Fatalf("page.AddRecord, err: %s", err)
+		} else if err := page.GetRecord(recordNumber, record2); err != nil {
+			t.Fatalf("page.GetRecord, err: %s", err)
+		} else if bytes.Compare(record1, record2) != 0 {
+			log.Println("TestFillPage", recordNumber, page)
+			t.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
+			break
+		}
+	}
+	//freeSpace := page.GetFreeSpace()
+	slotCount := page.GetSlotCount()
+
+	for i := int16(1); i < page.GetSlotCount(); i++ {
+		page.DeleteRecord(i)
+	}
+
+	expectedFreeSpace := int(dbase.SLOT_TABLE_LEN - (page.GetSlotCount()+1)*dbase.SLOT_TABLE_ENTRY_LEN)
+
+	if page.GetFreeSpace() != expectedFreeSpace {
+		t.Errorf("freespace, expected: %d, got: %d", expectedFreeSpace, page.GetFreeSpace())
+	}
+	if slotCount != page.GetSlotCount() {
+		t.Errorf("slotcount, expected: %d, got: %d", slotCount, page.GetSlotCount())
+	}
 }
 
 func BenchmarkFillPage(b *testing.B) {
