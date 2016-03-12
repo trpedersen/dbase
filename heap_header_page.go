@@ -20,9 +20,7 @@ type heapHeaderPage struct {
 
 const (
 	HEAP_LAST_PAGE_ID_OFFSET = 9
-	HEAP_LAST_PAGE_ID_END    = 17
 	HEAP_RECORD_COUNT_OFFSET = 17
-	HEAP_RECORD_COUNT_END    = 25
 )
 
 func NewHeapHeaderPage() HeapHeaderPage {

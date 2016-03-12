@@ -41,7 +41,6 @@ func (store *memoryStore) Get(id PageID, page Page) error {
 	if id > store.lastPageId {
 		return errors.New("Invalid page ID")
 	}
-	//log.Println("get", id)
 	buf := store.pages[int(id)]
 	store.gets += 1
 	return page.UnmarshalBinary(buf)
@@ -53,10 +52,6 @@ func (store *memoryStore) Set(id PageID, page Page) error {
 	store.l.Lock()
 	defer store.l.Unlock()
 
-	//log.Println("set", id)
-
-	// NB: file.WriteAt will just write at the end of the file if offset is past the end of the file
-	// so check total pages to stop this happening
 	if id > store.lastPageId {
 		return errors.New("Invalid page ID")
 	} else if buf, err := page.MarshalBinary(); err != nil {
@@ -65,14 +60,12 @@ func (store *memoryStore) Set(id PageID, page Page) error {
 		copy(store.pages[int(id)], buf)
 	}
 	store.sets += 1
-	return nil //store.file.Sync()
+	return nil
 }
 
 // New creates an empty page at the end of the database file.
 // Returns the page ID of the new page. Page count & Last page ID will be increased by 1.
 func (store *memoryStore) New() (PageID, error) {
-
-	//log.Println("new")
 
 	store.l.Lock()
 	defer store.l.Unlock()
@@ -88,8 +81,6 @@ func (store *memoryStore) New() (PageID, error) {
 // Append appends the given page at the end of the database file.
 // Returns the page ID of the new page. Page count & Last page ID will be increased by 1.
 func (store *memoryStore) Append(page Page) (PageID, error) {
-
-	//log.Println("append", page)
 
 	store.l.Lock()
 	defer store.l.Unlock()
@@ -121,7 +112,7 @@ func (store *memoryStore) Wipe(id PageID) error {
 		buf[i] = 0
 	}
 	store.wipes += 1
-	return nil //store.file.Sync()
+	return nil
 }
 
 // Count returns the total number of pages in the store.

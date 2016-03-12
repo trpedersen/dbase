@@ -75,7 +75,6 @@ func TestMarshalBinary(t *testing.T) {
 
 func TestDeleteRecords(t *testing.T) {
 	page := dbase.NewHeapPage()
-	//log.Println(page.GetFreeSpace(), page.GetSlotCount())
 	recLen := 97
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
 		record1 := make([]byte, recLen)
@@ -92,7 +91,6 @@ func TestDeleteRecords(t *testing.T) {
 			break
 		}
 	}
-	//freeSpace := page.GetFreeSpace()
 	slotCount := page.GetSlotCount()
 
 	buf := make([]byte, recLen, recLen)

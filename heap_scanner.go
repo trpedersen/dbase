@@ -1,9 +1,7 @@
 package dbase
 
 import (
-	//"errors"
 	"io"
-	//"log"
 	"sync"
 )
 
@@ -107,22 +105,3 @@ func (scanner *heapScanner) Next(buf []byte) (RID, int, error) {
 		}
 	}
 }
-
-/*
-
-
-
-	with(scanner, func() {
-
-		for ;;
-		record, error := scanner.Next()
-		print record
-		return
-	})
-
-	func with(o Quitable, f func()) {
-		f()
-		o.Quit
-	}
-
-*/

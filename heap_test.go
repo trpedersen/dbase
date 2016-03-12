@@ -23,16 +23,18 @@ const (
 var store dbase.FileStore
 
 func TestMain(m *testing.M) {
-	path := tempfile()
-	store, _ = dbase.Open(path, 0666, nil)
 
-	//var err error
+	path := tempfile()
+	var err error
+
+	store, err = dbase.Open(path, 0666, nil)
 	//store, err = dbase.NewMemoryStore()
-	//if err != nil {
-	//	panic(err)
-	//} else if store == nil {
-	//	panic("expected db")
-	//}
+
+	if err != nil {
+		panic(err)
+	} else if store == nil {
+		panic("expected db")
+	}
 	defer func() {
 		store.Close()
 		os.Remove(store.Path())
@@ -57,20 +59,7 @@ func Test_CreateHeap(t *testing.T) {
 }
 
 func Test_HeapWrite(t *testing.T) {
-	//
-	////path := tempfile()
-	////store, err := dbase.Open(path, 0666, nil)
-	////defer func() {
-	////	store.Close()
-	////	os.Remove(store.Path())
-	////}()
-	//store, err := dbase.NewMemoryStore()
 
-	//if err != nil {
-	//	t.Fatal(err)
-	//} else if store == nil {
-	//	t.Fatal("expected db")
-	//}
 	heap := dbase.NewHeap(store)
 
 	heapRuns := 100000
@@ -104,36 +93,15 @@ func Test_HeapWrite(t *testing.T) {
 	if count != int64(heapRuns) {
 		t.Fatalf("Record count, expected: %d, got: %d", heapRuns, count)
 	}
-
-	//log.Println(heap.Statistics())
-	//log.Println(store.Statistics())
-
-	//store.Close()
-	//store, err = dbase.Open(path, 0666, nil)
-	//heap = dbase.NewHeap(store)
-
 	count = heap.Count()
 	if count != int64(heapRuns) {
 		t.Fatalf("Record count, expected: %d, got: %d", heapRuns, count)
 	}
 
-	//log.Println(heap.Statistics())
-	//log.Println(store.Statistics())
 }
 
 func Test_HeapDelete(t *testing.T) {
-	//path := tempfile()
-	//store, err := dbase.Open(path, 0666, nil)
-	//defer func() {
-	//	store.Close()
-	//	os.Remove(store.Path())
-	////}()
-	//
-	//if err != nil {
-	//	t.Fatal(err)
-	//} else if store == nil {
-	//	t.Fatal("expected db")
-	//}
+
 	heap := dbase.NewHeap(store)
 
 	record1 := []byte("DELETE ME")
@@ -154,7 +122,7 @@ func Test_HeapDelete(t *testing.T) {
 	}
 }
 
-func Test_FileUpload(t *testing.T) {
+func Test_FileUploadSequential(t *testing.T) {
 
 	datapath := "D:/algs4-data/leipzig1M.txt"
 	//path := "D:/algs4-data/mobydick.txt"
@@ -166,16 +134,15 @@ func Test_FileUpload(t *testing.T) {
 	storepath := tempfile()
 	store, _ = dbase.Open(storepath, 0666, nil)
 
+	defer logElapsedTime(time.Now(), "Test_FileUploadSequential")
 	defer func() {
 		store.Close()
 		os.Remove(store.Path())
-		logElapsedTime(time.Now(), "Test_FileUpload")
 		file.Close()
 	}()
 
 
 	heap := dbase.NewHeap(store)
-	//heap.Clear()
 
 	var heapWrites int
 
@@ -186,14 +153,9 @@ func Test_FileUpload(t *testing.T) {
 		if len(line) != 0 {
 			b := []byte(line)
 			heap.Write(b)
-			//b := make([]byte, len(line))
-			//copy(b, []byte(line))
 			input = append(input, b)
 			heapWrites += 1
 		}
-		//if heapWrites > 10 {
-		//	break
-		//}
 	}
 	log.Println(heap.Statistics())
 	var heapReads int
@@ -201,7 +163,6 @@ func Test_FileUpload(t *testing.T) {
 	heapScanner := dbase.NewHeapScanner(heap)
 	buf := make([]byte, dbase.MAX_RECORD_LEN)
 	_, n, err = heapScanner.Next(buf)
-	//log.Println(rid, err)
 	var successfulCompares int
 	for err == nil {
 		buf := buf[0:n]
@@ -228,9 +189,6 @@ func Test_FileUploadParallel(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	//
-	//storepath := tempfile()
-	//store, _ = dbase.Open(storepath, 0666, nil)
 	store1, err := dbase.NewMemoryStore()
 
 	defer logElapsedTime(time.Now(), "Test_FileUploadParallel")
@@ -279,7 +237,6 @@ func Test_FileUploadParallel(t *testing.T) {
 					}
 				}
 			}
-			//log.Println("scan finished, closing linech")
 			close(linech)
 		}()
 		return linech
@@ -301,7 +258,6 @@ func Test_FileUploadParallel(t *testing.T) {
 					}
 					atomic.AddInt32(&heapWrites, 1)
 				} else {
-					//log.Println("writer quit", i, writes)
 					return
 				}
 			}
@@ -314,7 +270,6 @@ func Test_FileUploadParallel(t *testing.T) {
 	wg.Wait()
 
 	close(sampleQ)
-	//log.Println(samples)
 
 	log.Println(heap.Statistics())
 	log.Println("scanCount", scanCount, "lineCount", lineCount, "sends", sends)
@@ -336,7 +291,6 @@ func Test_FileUploadParallel(t *testing.T) {
 			buf = buf[0:dbase.MAX_RECORD_LEN]
 			_, n, err = heapScanner.Next(buf)
 		}
-		//log.Println("reader quit", i, reads)
 		return
 	}
 
@@ -354,7 +308,6 @@ func Test_FileUploadParallel(t *testing.T) {
 	buf := make([]byte, dbase.MAX_RECORD_LEN)
 	var goodCompares int
 	for _, sample := range samples {
-		//log.Println(sample.rid, sample.buf)
 		buf = buf[0:dbase.MAX_RECORD_LEN]
 		n, err := heap.Get(sample.rid, buf)
 		if err != nil {
