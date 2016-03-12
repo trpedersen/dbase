@@ -2,7 +2,6 @@ package dbase_test
 
 import (
 	"bytes"
-	"log"
 	"testing"
 
 	"github.com/trpedersen/dbase"
@@ -19,10 +18,9 @@ func TestFillPage(t *testing.T) {
 		}
 		if recordNumber, err := page.AddRecord(record1); err != nil {
 			t.Fatalf("page.AddRecord, err: %s", err)
-		} else if err := page.GetRecord(recordNumber, record2); err != nil {
+		} else if _, err := page.GetRecord(recordNumber, record2); err != nil {
 			t.Fatalf("page.GetRecord, err: %s", err)
 		} else if bytes.Compare(record1, record2) != 0 {
-			log.Println("TestFillPage", recordNumber, page)
 			t.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
 			break
 		}
@@ -60,11 +58,11 @@ func TestMarshalBinary(t *testing.T) {
 	record1 := make([]byte, recLen)
 	record2 := make([]byte, recLen)
 	for i := int16(1); i < page1.GetSlotCount(); i++ {
-		err := page1.GetRecord(i, record1)
+		_, err := page1.GetRecord(i, record1)
 		if err != nil {
 			t.Fatalf("page1.GetRecord, err: %s", err)
 		}
-		err = page2.GetRecord(i, record2)
+		_, err = page2.GetRecord(i, record2)
 		if err != nil {
 			t.Fatalf("page2.GetRecord, err: %s", err)
 		}
@@ -87,10 +85,9 @@ func TestDeleteRecords(t *testing.T) {
 		}
 		if recordNumber, err := page.AddRecord(record1); err != nil {
 			t.Fatalf("page.AddRecord, err: %s", err)
-		} else if err := page.GetRecord(recordNumber, record2); err != nil {
+		} else if _, err := page.GetRecord(recordNumber, record2); err != nil {
 			t.Fatalf("page.GetRecord, err: %s", err)
 		} else if bytes.Compare(record1, record2) != 0 {
-			log.Println("TestFillPage", recordNumber, page)
 			t.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
 			break
 		}
@@ -98,8 +95,13 @@ func TestDeleteRecords(t *testing.T) {
 	//freeSpace := page.GetFreeSpace()
 	slotCount := page.GetSlotCount()
 
+	buf := make([]byte, recLen, recLen)
 	for i := int16(1); i < page.GetSlotCount(); i++ {
 		page.DeleteRecord(i)
+		_, err := page.GetRecord(i, buf)
+		if err == nil {
+			t.Errorf("page.DeleteRecord, expecting: record deleted, got: nil")
+		}
 	}
 
 	expectedFreeSpace := int(dbase.SLOT_TABLE_LEN - (page.GetSlotCount()+1)*dbase.SLOT_TABLE_ENTRY_LEN)
@@ -125,7 +127,7 @@ func BenchmarkFillPage(b *testing.B) {
 			}
 			if recordNumber, err := page.AddRecord(record1); err != nil {
 				b.Fatalf("page.AddRecord, err: %s", err)
-			} else if err := page.GetRecord(recordNumber, record2); err != nil {
+			} else if _, err := page.GetRecord(recordNumber, record2); err != nil {
 				b.Fatalf("page.GetRecord, err: %s", err)
 			} else if bytes.Compare(record1, record2) != 0 {
 				b.Errorf("bytes.Compare: expected %t, got %t", record1, record2)

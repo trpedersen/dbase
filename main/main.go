@@ -25,7 +25,8 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	memoryStore()
+	//memoryStore()
+	Test_HeapDelete()
 }
 
 func memoryStore() {
@@ -74,7 +75,7 @@ func Test_HeapWrite(store dbase.PageStore) {
 		if rid.PageID == 0 {
 			log.Fatalf("RID zero")
 		}
-		if err = heap.Get(rid, record2); err != nil {
+		if _, err = heap.Get(rid, record2); err != nil {
 			log.Fatalf("heap.Get, err: %s", err)
 		}
 		if bytes.Compare(record1, record2) != 0 {
@@ -141,4 +142,37 @@ func tempfile() string {
 		panic(err)
 	}
 	return f.Name()
+}
+
+func Test_HeapDelete() {
+	path := tempfile()
+	store, err := dbase.Open(path, 0666, nil)
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
+	if err != nil {
+		log.Fatal(err)
+	} else if store == nil {
+		log.Fatal("expected db")
+	}
+	heap := dbase.NewHeap(store)
+
+	record1 := []byte("DELETE ME")
+	rid, err := heap.Write(record1)
+	if err != nil {
+		log.Fatalf("heap.Write, err: %s", err)
+	}
+	err = heap.Delete(rid)
+	if err != nil {
+		log.Fatalf("heap.Delete, err: %s", err)
+	}
+	_, err = heap.Get(rid, record1)
+	if err == nil {
+		log.Fatalf("Heap delete, expected: RECORD_DELETED, got: nil")
+	}
+	if _, ok := err.(dbase.RecordDeleted); !ok {
+		log.Fatalf("Heap delete, expected: RECORD_DELETED, got: %s", err)
+	}
 }

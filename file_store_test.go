@@ -167,7 +167,7 @@ func TestSetGet(t *testing.T) {
 	}
 	//log.Println("D", page)
 	record2 := make([]byte, len(record1))
-	if err = page.GetRecord(slot, record2); err != nil {
+	if _, err = page.GetRecord(slot, record2); err != nil {
 		t.Fatalf("page.GetRecord, err: %s", err)
 	}
 	//log.Println(slot, page, record2)

@@ -28,7 +28,7 @@ type HeapPage interface {
 	//NextPageID() PageID
 	GetSlotCount() int16
 	AddRecord(buf []byte) (int16, error)
-	GetRecord(slot int16, buf []byte) error
+	GetRecord(slot int16, buf []byte) (int, error)
 	SetRecord(slot int16, buf []byte) error
 	DeleteRecord(slot int16) error
 	GetFreeSpace() int
@@ -42,7 +42,7 @@ type heapPage struct {
 	//slotTable   []byte
 	//slotTable *SlotTable
 	slotTable []byte
-	slots     []*Slot
+	//slots     []*Slot
 	l         *sync.Mutex
 }
 
@@ -167,17 +167,82 @@ func NewHeapPage() HeapPage {
 			pagetype: PAGE_TYPE_HEAP,
 			bytes:    make([]byte, PAGE_SIZE, PAGE_SIZE),
 		},
-		slots: make([]*Slot, 1, 200),
+		//slots: make([]*Slot, 1, 200),
 		l:     &sync.Mutex{},
 	}
 
 	page.header = page.bytes[0:PAGE_HEADER_LEN]
 	page.slotTable = page.bytes[SLOT_TABLE_OFFSET : SLOT_TABLE_OFFSET+SLOT_TABLE_LEN]
-	page.slots[0] = NewFreeSpaceSlot()
+	page.setSlotFlags(0, RECORD_ON_PAGE)
+	page.setSlotOffset(0,0)
+	page.setSlotLength(0, SLOT_TABLE_LEN - (2 * SLOT_TABLE_ENTRY_LEN))
 	page.slotCount = 1
 
 	return page
 }
+
+//func (page *heapPage) getSlotSlice(slot int) []byte {
+//	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+//	return page.slotTable[offset:offset+SLOT_TABLE_ENTRY_LEN]
+//}
+
+func (page *heapPage) getSlotFlags(slot int16) byte {
+	//if slot > page.slotCount - 1 {
+	//	panic("Invalid slot") //return -1, errors.New("Invalid slot")
+	//}
+	//s := page.getSlotSlice(slot)
+	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+	return page.slotTable[offset]
+}
+
+func (page *heapPage) setSlotFlags(slot int16, flags byte) error {
+	//if slot > page.slotCount - 1 {
+	//	panic("Invalid slot") //return -1, errors.New("Invalid slot")
+	//}
+	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+	page.slotTable[offset] = flags
+	return nil
+}
+
+func (page *heapPage) getSlotOffset(slot int16) int16 {
+	//if slot > page.slotCount - 1 {
+	//	return -1, errors.New("Invalid slot")
+	//}
+	//s := page.getSlotSlice(slot)
+	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+	return int16(binary.LittleEndian.Uint16(page.slotTable[offset+1 : offset+3]))
+}
+
+func (page *heapPage) setSlotOffset(slot int16, slotOffset int16) error {
+	//if slot > page.slotCount - 1 {
+	//	return -1, errors.New("Invalid slot")
+	//}
+	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+	binary.LittleEndian.PutUint16(page.slotTable[offset+1:offset+3], uint16(slotOffset))
+	return nil
+}
+
+func (page *heapPage) getSlotLength(slot int16) int16 {
+	//if slot > page.slotCount - 1 {
+	//	return -1, errors.New("Invalid slot")
+	//}
+	//s := page.getSlotSlice(slot)
+	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+	result := int16(binary.LittleEndian.Uint16(page.slotTable[offset+3 : offset+5]))
+	return result
+}
+
+func (page *heapPage) setSlotLength(slot int16, length int16) error {
+	//if slot > page.slotCount - 1 {
+	//	return -1, errors.New("Invalid slot")
+	//}
+	offset := SLOT_TABLE_LEN - ((slot + 1) * SLOT_TABLE_ENTRY_LEN)
+	binary.LittleEndian.PutUint16(page.slotTable[offset+3:offset+5], uint16(length))
+	return nil
+}
+
+
+
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 // The page is encoded as a []byte PAGE_SIZE long, ready for serialisation.
@@ -189,17 +254,17 @@ func (page *heapPage) MarshalBinary() ([]byte, error) {
 	binary.LittleEndian.PutUint64(page.header[PAGE_ID_OFFSET:], uint64(page.id))
 	page.header[PAGE_TYPE_OFFSET] = byte(PAGE_TYPE_HEAP)
 
-	binary.LittleEndian.PutUint16(page.header[SLOT_COUNT_OFFSET:], uint16(len(page.slots)))
+	binary.LittleEndian.PutUint16(page.header[SLOT_COUNT_OFFSET:], uint16(page.slotCount))
 
 	//sort.Sort(SlotByID(page.slots))
-	for i, slot := range page.slots {
-		offset := SLOT_TABLE_LEN - ((int16(i) + 1) * SLOT_TABLE_ENTRY_LEN)
-		page.slotTable[offset] = slot.flags
-		offset += 1
-		binary.LittleEndian.PutUint16(page.slotTable[offset:offset+2], uint16(slot.offset))
-		offset += 2
-		binary.LittleEndian.PutUint16(page.slotTable[offset:offset+2], uint16(slot.length))
-	}
+	//for i, slot := range page.slots {
+	//	offset := SLOT_TABLE_LEN - ((int16(i) + 1) * SLOT_TABLE_ENTRY_LEN)
+	//	page.slotTable[offset] = slot.flags
+	//	offset += 1
+	//	binary.LittleEndian.PutUint16(page.slotTable[offset:offset+2], uint16(slot.offset))
+	//	offset += 2
+	//	binary.LittleEndian.PutUint16(page.slotTable[offset:offset+2], uint16(slot.length))
+	//}
 	//log.Println("ma", page.slotTable)
 
 	return page.bytes, nil
@@ -232,17 +297,17 @@ func (page *heapPage) UnmarshalBinary(buf []byte) error {
 
 	page.slotCount = int16(binary.LittleEndian.Uint16(page.header[SLOT_COUNT_OFFSET:]))
 
-	page.slots = page.slots[0:0]
-	for i := int16(0); i < page.GetSlotCount(); i++ {
-		offset := SLOT_TABLE_LEN - ((i + 1) * SLOT_TABLE_ENTRY_LEN)
-		slot := &Slot{
-			id:     i,
-			flags:  page.slotTable[offset],
-			offset: int16(binary.LittleEndian.Uint16(page.slotTable[offset+1 : offset+3])),
-			length: int16(binary.LittleEndian.Uint16(page.slotTable[offset+3 : offset+5])),
-		}
-		page.slots = append(page.slots, slot) // page.slots now sorted by slot.id
-	}
+	//page.slots = page.slots[0:0]
+	//for i := int16(0); i < page.GetSlotCount(); i++ {
+	//	offset := SLOT_TABLE_LEN - ((i + 1) * SLOT_TABLE_ENTRY_LEN)
+	//	slot := &Slot{
+	//		id:     i,
+	//		flags:  page.slotTable[offset],
+	//		offset: int16(binary.LittleEndian.Uint16(page.slotTable[offset+1 : offset+3])),
+	//		length: int16(binary.LittleEndian.Uint16(page.slotTable[offset+3 : offset+5])),
+	//	}
+	//	page.slots = append(page.slots, slot) // page.slots now sorted by slot.id
+	//}
 
 	return nil
 }
@@ -254,7 +319,7 @@ func (page *heapPage) GetSlotCount() int16 {
 
 // GetFreeSpace return the amount of free space available to store a record (inclusive of any header fields.)
 func (page *heapPage) GetFreeSpace() int {
-	return int(page.slots[0].length)
+	return int(page.getSlotLength(0))
 }
 
 // AddRecord adds record to page, using copy semantics. Returns record number for added record.
@@ -264,46 +329,51 @@ func (page *heapPage) AddRecord(record []byte) (int16, error) {
 	page.l.Lock()
 	defer page.l.Unlock()
 
-	if len(record) > int(page.slots[0].length) {
+	if len(record) > int(page.getSlotLength(0)) {
 		return 0, InsufficientPageSpace{page.id, 0}
 	}
 
 	recordLength := int16(len(record))
-	recordOffset := page.slots[0].offset
-	page.slots = append(page.slots, &Slot{
-		id:     int16(len(page.slots)),
-		flags:  RECORD_ON_PAGE,
-		offset: recordOffset,
-		length: int16(recordLength),
-	})
+	recordOffset := page.getSlotOffset(0)
+	// make a new slot table entry
+	page.setSlotFlags(page.slotCount, RECORD_ON_PAGE)
+	page.setSlotOffset(page.slotCount, recordOffset)
+	page.setSlotLength(page.slotCount, int16(recordLength))
+	//page.slots = append(page.slots, &Slot{
+	//	id:     int16(len(page.slots)),
+	//	flags:  RECORD_ON_PAGE,
+	//	offset: recordOffset,
+	//	length: int16(recordLength),
+	//})
 	page.slotCount += 1
 	copy(page.slotTable[recordOffset:recordOffset+recordLength], record)
-	page.slots[0].offset += int16(recordLength)
-	page.slots[0].length = SLOT_TABLE_LEN - page.slots[0].offset - (int16(len(page.slots)+1) * SLOT_TABLE_ENTRY_LEN)
-	if page.slots[0].length < 0 {
-		page.slots[0].length = 0
+	page.setSlotOffset(0, page.getSlotOffset(0) + int16(recordLength))
+	page.setSlotLength(0, SLOT_TABLE_LEN - page.getSlotOffset(0) - (int16(page.slotCount+1) * SLOT_TABLE_ENTRY_LEN))
+	if page.getSlotLength(0) < 0 {
+		page.setSlotLength(0, 0)
 	}
-	slot := page.slotCount - 1 // slots are 0-based
-	return slot, nil
+	return page.slotCount - 1, nil // slots are 0-based
 }
 
 // GetRecord returns record specified by recordNumber.
 // Note: slot numbers are 0 based. Slot 0 is freespace slot.
-func (page *heapPage) GetRecord(slotNumber int16, buf []byte) error {
+func (page *heapPage) GetRecord(slotNumber int16, buf []byte) (int, error) {
 
 	page.l.Lock()
 	defer page.l.Unlock()
 
 	// slots are 0 based
 	if slotNumber > page.slotCount-1 {
-		return InvalidRID{page.id, slotNumber}
+		return 0, InvalidRID{page.id, slotNumber}
 	}
-	slot := page.slots[slotNumber]
-	if slot.flags == RECORD_DELETED {
-		return RecordDeleted{page.id, slotNumber}
+	//slot := page.slots[slotNumber]
+	if page.getSlotFlags(slotNumber) == RECORD_DELETED {
+		return 0, RecordDeleted{page.id, slotNumber}
 	}
-	copy(buf, page.slotTable[slot.offset:slot.offset+slot.length])
-	return nil
+	offset := int(page.getSlotOffset(slotNumber))
+	length := int(page.getSlotLength(slotNumber))
+	copy(buf, page.slotTable[offset:offset+length])
+	return length, nil
 }
 
 // SetRecord updates record specified by slot.
@@ -317,23 +387,25 @@ func (page *heapPage) SetRecord(slotNumber int16, buf []byte) error {
 	if slotNumber > page.slotCount-1 {
 		return InvalidRID{page.id, slotNumber}
 	}
-	slot := page.slots[slotNumber]
+	slotOffset := page.getSlotOffset(slotNumber)
+	slotLength := page.getSlotLength(slotNumber)
+	freeLength := page.getSlotLength(0)
 	recordLength := len(buf)
 
 	switch {
 
-	case recordLength == int(slot.length): // record same length
+	case recordLength == int(slotLength): // record same length
 		// just update the slot
-		copy(page.slotTable[slot.offset:slot.offset+slot.length], buf)
-	case recordLength < int(slot.length): // record smaller than original length
-		slot.length = int16(recordLength)
-		copy(page.slotTable[slot.offset:slot.offset+slot.length], buf)
+		copy(page.slotTable[slotOffset:slotOffset+slotLength], buf)
+	case recordLength < int(slotLength): // record smaller than original length
+		slotLength = int16(recordLength)
+		copy(page.slotTable[slotOffset:slotOffset+slotLength], buf)
 		page.compact()
-	case recordLength < int(slot.length+page.slots[0].length): // still space enough in the page
-		if err := page.reallocateSlot(slot, int16(recordLength)); err != nil {
+	case recordLength < int(slotLength+freeLength): // still space enough in the page
+		if err := page.reallocateSlot(slotNumber, int16(recordLength)); err != nil {
 			panic(err) // TODO: replace panic once fully debugged
 		}
-		copy(page.slotTable[slot.offset:slot.offset+slot.length], buf)
+		copy(page.slotTable[slotOffset:slotOffset+slotLength], buf)
 	case recordLength < int(MAX_RECORD_LEN):
 		return InsufficientPageSpace{PageID: page.id, Slot: slotNumber}
 	default:
@@ -354,17 +426,16 @@ func (page *heapPage) DeleteRecord(slotNumber int16) error {
 	if slotNumber > page.slotCount-1 {
 		return InvalidRID{page.id, slotNumber}
 	}
-	slot := page.slots[slotNumber]
-	if slot.flags == RECORD_DELETED {
+	//slot := page.slots[slotNumber]
+	if page.getSlotFlags(slotNumber) == RECORD_DELETED {
 		return nil // delete is idempotent
 	}
-	slot.flags = RECORD_DELETED
-
+	page.setSlotFlags(slotNumber, RECORD_DELETED)
 	return page.compact() // TODO: compact later?
 }
 
 // TODO: implement
-func (page *heapPage) reallocateSlot(slot *Slot, requestedLength int16) error {
+func (page *heapPage) reallocateSlot(slot int16, requestedLength int16) error {
 	return nil
 }
 
@@ -372,11 +443,14 @@ func (page *heapPage) reallocateSlot(slot *Slot, requestedLength int16) error {
 func (page *heapPage) compact() error {
 	//log.Println("compact A", page.slots[0].offset, page.slots[0].length)
 
-	var slot *Slot
+	//var slot *Slot
 
-	if len(page.slots) == 1 {
+	if page.slotCount == 1 {
 		// reset free space
-		page.slots[0] = NewFreeSpaceSlot()
+		//page.slots[0] = NewFreeSpaceSlot()
+		page.setSlotFlags(0, RECORD_ON_PAGE)
+		page.setSlotOffset(0,0)
+		page.setSlotLength(0, SLOT_TABLE_LEN - (2 * SLOT_TABLE_ENTRY_LEN))
 		return nil
 	}
 
@@ -389,24 +463,25 @@ func (page *heapPage) compact() error {
 
 	var offset int16
 
-	for i := 1; i < len(page.slots); i++ {
-		slot = page.slots[i]
+	for i := int16(1); i < page.slotCount; i++ {
+		//slot = page.slots[i]
+		slotOffset := page.getSlotOffset(i)
+		slotLength := page.getSlotLength(i)
 
-		switch slot.flags {
+		switch page.getSlotFlags(i) {
 		case RECORD_DELETED:
-			slot.offset = -1
-			slot.length = -1
-			continue
+			page.setSlotOffset(i, -1)
+			page.setSlotLength(i, -1)
 		case RECORD_ON_PAGE:
-			copy(buf[offset:offset+slot.length], page.bytes[slot.offset:slot.offset+slot.length])
-			slot.offset = offset
-			offset += slot.length
+			copy(buf[offset:offset+slotLength], page.bytes[slotOffset:slotOffset+slotLength])
+			page.setSlotOffset(i,offset)
+			offset += slotLength
 		}
 	}
-	page.slots[0].offset = offset
-	page.slots[0].length = SLOT_TABLE_LEN - offset - (int16(len(page.slots)+1) * SLOT_TABLE_ENTRY_LEN)
+	copy(buf[SLOT_TABLE_LEN - ((page.slotCount+1) * SLOT_TABLE_ENTRY_LEN):SLOT_TABLE_LEN], page.slotTable[SLOT_TABLE_LEN - ((page.slotCount+1) * SLOT_TABLE_ENTRY_LEN):SLOT_TABLE_LEN])
 	copy(page.slotTable, buf)
-
+	page.setSlotOffset( 0, offset)
+	page.setSlotLength(0, SLOT_TABLE_LEN - offset - ((page.slotCount+1) * SLOT_TABLE_ENTRY_LEN))
 	//log.Println("compact B", page.slots[0].offset, page.slots[0].length)
 	return nil
 }
@@ -418,9 +493,17 @@ func (page *heapPage) Clear() error {
 	defer page.l.Unlock()
 
 	//page.slotCount = 0
-	page.slots = page.slots[0:0]
-	page.slots = append(page.slots, NewFreeSpaceSlot())
+	//page.slots = page.slots[0:0]
+	//page.slots = append(page.slots, NewFreeSpaceSlot())
+	//for offset := int16(0); offset < SLOT_TABLE_LEN; offset++ {
+	//	page.slotTable[offset] = 0
+	//}
+
+	page.setSlotFlags(0, RECORD_ON_PAGE)
+	page.setSlotOffset(0,0)
+	page.setSlotLength(0, SLOT_TABLE_LEN - (2 * SLOT_TABLE_ENTRY_LEN))
 	page.slotCount = 1
+
 	//log.Println("clear", len(page.slots), page.slots)
 	return nil
 }
