@@ -77,7 +77,7 @@ func NewHeap(store PageStore) Heap {
 func (heap *heap) Clear() error {
 
 	heap.l.Lock()
-	defer heap.l.Lock()
+	defer heap.l.Unlock()
 
 	heap.headerPage = NewHeapHeaderPage()
 	heap.lastPage = NewHeapPage()
@@ -124,7 +124,7 @@ func (heap *heap) Count() int64 {
 func (heap *heap) Write(buf []byte) (RID, error) {
 
 	heap.l.Lock()
-	defer heap.l.Lock()
+	defer heap.l.Unlock()
 
 	var err error
 	var rid RID

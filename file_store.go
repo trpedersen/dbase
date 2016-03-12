@@ -9,7 +9,6 @@ import (
 
 type FileStore interface {
 	PageStore
-	Close() error
 	Path() string
 }
 

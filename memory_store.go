@@ -8,7 +8,6 @@ import (
 
 type MemoryStore interface {
 	PageStore
-	Close() error
 }
 
 type memoryStore struct {

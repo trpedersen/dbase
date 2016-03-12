@@ -7,4 +7,5 @@ type PageStore interface {
 	Append(page Page) (PageID, error)
 	Count() int64
 	Statistics() string
+	Close() error
 }
