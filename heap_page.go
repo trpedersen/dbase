@@ -77,7 +77,7 @@ func (e InvalidRID) Error() string {
 
 type InsufficientPageSpace struct {
 	PageID PageID
-	Slot   int16git
+	Slot   int16
 }
 
 func (e InsufficientPageSpace) Error() string {
