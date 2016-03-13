@@ -26,6 +26,7 @@ type HeapPage interface {
 	GetSlotCount() int16
 	AddRecord(buf []byte) (int16, error)
 	GetRecord(slot int16, buf []byte) (int, error)
+	GetRecordLength(slot int16) (int, error)
 	SetRecord(slot int16, buf []byte) error
 	DeleteRecord(slot int16) error
 	GetFreeSpace() int
@@ -242,18 +243,30 @@ func (page *heapPage) AddRecord(record []byte) (int16, error) {
 	return page.slotCount - 1, nil // slots are 0-based
 }
 
-// GetRecord returns record specified by recordNumber.
+// GetRecordLength returns length of record specified by recordNumber.
 // Note: slot numbers are 0 based. Slot 0 is freespace slot.
-func (page *heapPage) GetRecord(slotNumber int16, buf []byte) (int, error) {
-
-	page.l.Lock()
-	defer page.l.Unlock()
+func (page *heapPage) GetRecordLength(slotNumber int16) (int, error) {
 
 	// slots are 0 based
 	if slotNumber > page.slotCount-1 {
 		return 0, InvalidRID{page.id, slotNumber}
 	}
-	//slot := page.slots[slotNumber]
+
+	if page.getSlotFlags(slotNumber) == RECORD_DELETED {
+		return 0, RecordDeleted{page.id, slotNumber}
+	}
+	length := int(page.getSlotLength(slotNumber))
+	return length, nil
+}
+
+// GetRecord returns record specified by recordNumber.
+// Note: slot numbers are 0 based. Slot 0 is freespace slot.
+func (page *heapPage) GetRecord(slotNumber int16, buf []byte) (int, error) {
+
+	// slots are 0 based
+	if slotNumber == 0 || slotNumber > page.slotCount-1 {
+		return 0, InvalidRID{page.id, slotNumber}
+	}
 	if page.getSlotFlags(slotNumber) == RECORD_DELETED {
 		return 0, RecordDeleted{page.id, slotNumber}
 	}
@@ -271,7 +284,7 @@ func (page *heapPage) SetRecord(slotNumber int16, buf []byte) error {
 	defer page.l.Unlock()
 
 	// recordNumber is 0 based
-	if slotNumber > page.slotCount-1 {
+	if slotNumber == 0 || slotNumber > page.slotCount-1 {
 		return InvalidRID{page.id, slotNumber}
 	}
 	slotOffset := page.getSlotOffset(slotNumber)
@@ -310,7 +323,7 @@ func (page *heapPage) DeleteRecord(slotNumber int16) error {
 	defer page.l.Unlock()
 
 	// recordNumber is 0 based
-	if slotNumber > page.slotCount-1 {
+	if slotNumber == 0 || slotNumber > page.slotCount-1 {
 		return InvalidRID{page.id, slotNumber}
 	}
 	//slot := page.slots[slotNumber]

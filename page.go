@@ -18,6 +18,7 @@ const (
 	DB_DIRECTORY_PAGE     = PageType(0x02)
 	PAGE_TYPE_HEAP        = PageType(0x03)
 	PAGE_TYPE_HEAP_HEADER = PageType(0x04)
+	PAGE_TYPE_OVERFLOW    = PageType(0x05)
 )
 
 type PageID int64

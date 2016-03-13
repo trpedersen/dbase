@@ -33,7 +33,7 @@ type heap struct {
 
 func NewHeap(store PageStore) Heap {
 	heap := &heap{
-		l: &sync.Mutex{},
+		l:     &sync.Mutex{},
 		store: store,
 		//dir:        dir,
 		headerPage: NewHeapHeaderPage(),
@@ -192,7 +192,6 @@ func (heap *heap) Set(rid RID, buf []byte) error {
 		heap.pagePool.Put(page)
 		heap.l.Unlock()
 	}()
-
 
 	page.Clear()
 	if err := heap.store.Get(rid.PageID, page); err != nil {

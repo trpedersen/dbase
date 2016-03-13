@@ -141,7 +141,6 @@ func Test_FileUploadSequential(t *testing.T) {
 		file.Close()
 	}()
 
-
 	heap := dbase.NewHeap(store)
 
 	var heapWrites int
@@ -214,12 +213,11 @@ func Test_FileUploadParallel(t *testing.T) {
 	}
 	samples := make([]*sample, 0, 2000)
 	sampleQ := make(chan *sample)
-	go func(){
+	go func() {
 		for sample := range sampleQ {
 			samples = append(samples, sample)
 		}
 	}()
-
 
 	scan := func() chan string {
 		linech := make(chan string)
@@ -253,8 +251,8 @@ func Test_FileUploadParallel(t *testing.T) {
 					b := []byte(line)
 					rid, err := heap.Write(b)
 					writes += 1
-					if err == nil && (writes % 1000 == 0) {
-						sampleQ <- &sample{rid:rid, buf:b}
+					if err == nil && (writes%1000 == 0) {
+						sampleQ <- &sample{rid: rid, buf: b}
 					}
 					atomic.AddInt32(&heapWrites, 1)
 				} else {
