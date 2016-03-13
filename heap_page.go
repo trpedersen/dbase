@@ -2,6 +2,7 @@ package dbase
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -76,7 +77,7 @@ func (e InvalidRID) Error() string {
 
 type InsufficientPageSpace struct {
 	PageID PageID
-	Slot   int16
+	Slot   int16git
 }
 
 func (e InsufficientPageSpace) Error() string {
@@ -298,15 +299,17 @@ func (page *heapPage) SetRecord(slotNumber int16, buf []byte) error {
 		// just update the slot
 		copy(page.slotTable[slotOffset:slotOffset+slotLength], buf)
 	case recordLength < int(slotLength): // record smaller than original length
+		if err := page.reallocateSlot(slotNumber, int16(recordLength)); err != nil {
+			panic(err) // TODO: replace panic once fully debugged
+		}
+		copy(page.slotTable[slotOffset:int(slotOffset)+recordLength], buf)
 		slotLength = int16(recordLength)
-		copy(page.slotTable[slotOffset:slotOffset+slotLength], buf)
-		page.compact()
 	case recordLength < int(slotLength+freeLength): // still space enough in the page
 		if err := page.reallocateSlot(slotNumber, int16(recordLength)); err != nil {
 			panic(err) // TODO: replace panic once fully debugged
 		}
-		copy(page.slotTable[slotOffset:slotOffset+slotLength], buf)
-	case recordLength < int(MAX_RECORD_LEN):
+		copy(page.slotTable[slotOffset:int(slotOffset)+recordLength], buf)
+	case recordLength > int(MAX_RECORD_LEN):
 		return InsufficientPageSpace{PageID: page.id, Slot: slotNumber}
 	default:
 		// the record is too big to fit on a page, so move it on to an overflow page
@@ -336,6 +339,38 @@ func (page *heapPage) DeleteRecord(slotNumber int16) error {
 
 // TODO: implement
 func (page *heapPage) reallocateSlot(slot int16, requestedLength int16) error {
+	// take a copy of the record
+	// temporarily delete then compact
+	// allocate new record length from freespace
+
+	flags := page.getSlotFlags(slot)
+	if flags != RECORD_ON_PAGE {
+		return errors.New("Invalid record flag")
+	}
+
+	buf := bufferPool.Get().([]byte)
+	buf = buf[0:requestedLength]
+	defer bufferPool.Put(buf)
+
+	offset := page.getSlotOffset(slot)
+	length := page.getSlotLength(slot)
+	copy(buf, page.slotTable[offset:offset+length]) // NB: requested length could be shorter than original
+
+	page.setSlotFlags(slot, RECORD_DELETED)
+	page.compact()
+	page.setSlotFlags(slot, RECORD_ON_PAGE)
+
+	offset = page.getSlotOffset(0)
+	// make a new slot table entry
+	page.setSlotOffset(slot, offset)
+	page.setSlotLength(slot, requestedLength)
+	copy(page.slotTable[offset:offset+requestedLength], buf)
+	page.setSlotOffset(0, page.getSlotOffset(0)+requestedLength)
+	page.setSlotLength(0, SLOT_TABLE_LEN-page.getSlotOffset(0)-(int16(page.slotCount+1)*SLOT_TABLE_ENTRY_LEN))
+	if page.getSlotLength(0) < 0 {
+		page.setSlotLength(0, 0)
+	}
+
 	return nil
 }
 

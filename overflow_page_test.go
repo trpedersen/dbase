@@ -116,7 +116,7 @@ func Test_MultipleOverflowPages(t *testing.T) {
 			t.Fatalf("store.Get, err: %s", err)
 		}
 		offset := page.GetSegmentID() * int32(dbase.MAX_SEGMENT_LEN)
-		page.GetSegment(record2[offset:offset+int32(dbase.MAX_SEGMENT_LEN)])
+		page.GetSegment(record2[offset : offset+int32(dbase.MAX_SEGMENT_LEN)])
 		pageId = page.GetNextPageID()
 		if pageId <= 0 {
 			break
@@ -125,7 +125,7 @@ func Test_MultipleOverflowPages(t *testing.T) {
 
 	if bytes.Compare(record1, record2) != 0 {
 		t.Errorf("bytes.Compare\n"+
-		"expecting: %s\n"+
-		"      got: %s", record1, record2)
+			"expecting: %s\n"+
+			"      got: %s", record1, record2)
 	}
 }

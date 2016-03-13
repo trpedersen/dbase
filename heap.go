@@ -9,7 +9,7 @@ import (
 //
 type Heap interface {
 	Count() int64 // Count of records in heap
-	Write(buf []byte) (RID, error)
+	Put(buf []byte) (RID, error)
 	Get(rid RID, buf []byte) (int, error)
 	Set(rid RID, buf []byte) error
 	Delete(rid RID) error
@@ -121,7 +121,7 @@ func (heap *heap) Count() int64 {
 	return heap.headerPage.GetRecordCount()
 }
 
-func (heap *heap) Write(buf []byte) (RID, error) {
+func (heap *heap) Put(buf []byte) (RID, error) {
 
 	heap.l.Lock()
 	defer heap.l.Unlock()

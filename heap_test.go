@@ -74,7 +74,7 @@ func Test_HeapWrite(t *testing.T) {
 
 	for i := 0; i < heapRuns; i++ {
 
-		rid, err := heap.Write(record1)
+		rid, err := heap.Put(record1)
 		if err != nil {
 			t.Fatalf("Write, err: %s", err)
 		}
@@ -105,7 +105,7 @@ func Test_HeapDelete(t *testing.T) {
 	heap := dbase.NewHeap(store)
 
 	record1 := []byte("DELETE ME")
-	rid, err := heap.Write(record1)
+	rid, err := heap.Put(record1)
 	if err != nil {
 		t.Fatalf("heap.Write, err: %s", err)
 	}
@@ -151,7 +151,7 @@ func Test_FileUploadSequential(t *testing.T) {
 		line := scanner.Text()
 		if len(line) != 0 {
 			b := []byte(line)
-			heap.Write(b)
+			heap.Put(b)
 			input = append(input, b)
 			heapWrites += 1
 		}
@@ -249,7 +249,7 @@ func Test_FileUploadParallel(t *testing.T) {
 			case line, ok := <-linech:
 				if ok {
 					b := []byte(line)
-					rid, err := heap.Write(b)
+					rid, err := heap.Put(b)
 					writes += 1
 					if err == nil && (writes%1000 == 0) {
 						sampleQ <- &sample{rid: rid, buf: b}

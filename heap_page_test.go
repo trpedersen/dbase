@@ -7,7 +7,7 @@ import (
 	"github.com/trpedersen/dbase"
 )
 
-func TestFillPage(t *testing.T) {
+func Test_FillPage(t *testing.T) {
 	page := dbase.NewHeapPage()
 	recLen := 107
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
@@ -27,7 +27,7 @@ func TestFillPage(t *testing.T) {
 	}
 }
 
-func TestMarshalBinary(t *testing.T) {
+func Test_MarshalBinary(t *testing.T) {
 	page1 := dbase.NewHeapPage()
 	recLen := 107
 	for i := 0; page1.GetFreeSpace() > recLen; i++ {
@@ -73,7 +73,7 @@ func TestMarshalBinary(t *testing.T) {
 
 }
 
-func TestDeleteRecords(t *testing.T) {
+func Test_DeleteRecords(t *testing.T) {
 	page := dbase.NewHeapPage()
 	recLen := 97
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
@@ -110,6 +110,66 @@ func TestDeleteRecords(t *testing.T) {
 	if slotCount != page.GetSlotCount() {
 		t.Errorf("slotcount, expected: %d, got: %d", slotCount, page.GetSlotCount())
 	}
+}
+
+func Test_ResizeRecords(t *testing.T) {
+	page := dbase.NewHeapPage()
+
+	count := 50
+	recLen := page.GetFreeSpace() / count / 3 // need to take into account slots
+
+	for i := 0; i < count; i++ {
+		record1 := make([]byte, recLen)
+		for j := int16(0); j < int16(recLen); j++ {
+			record1[j] = byte(i)
+		}
+		if _, err := page.AddRecord(record1); err != nil {
+			t.Fatalf("page.AddRecord, err: %s", err)
+		}
+	}
+
+	slotCount := page.GetSlotCount()
+	freespace1 := page.GetFreeSpace()
+
+	// double the record size & resave
+	recLen *= 2
+	record2 := make([]byte, recLen)
+	for i := int16(1); i < slotCount; i++ {
+		for j := int16(0); j < int16(recLen); j++ {
+			record2[j] = byte(i)
+		}
+		err := page.SetRecord(i, record2)
+		if err != nil {
+			t.Fatalf("page.SetRecord after resize, err: %s", err)
+		}
+	}
+
+	freespace2 := page.GetFreeSpace()
+
+	if freespace2 >= freespace1 {
+		t.Errorf("freespace after resize, freespace before: %d, freespace after: %d", freespace1, freespace2)
+	}
+
+	//log.Println("freespace", freespace1, freespace2)
+
+	// reset the record size & resave
+	recLen /= 2
+	record3 := make([]byte, recLen)
+	for i := int16(1); i < slotCount; i++ {
+		for j := int16(0); j < int16(recLen); j++ {
+			record3[j] = byte(i)
+		}
+		err := page.SetRecord(i, record3)
+		if err != nil {
+			t.Fatalf("page.SetRecord after resize, err: %s", err)
+		}
+	}
+	freespace3 := page.GetFreeSpace()
+	if freespace1 != freespace3 {
+		t.Errorf("freespace after re-resize, expecting: %d, got: %d", freespace1, freespace3)
+	}
+	//log.Println("freespace", freespace1, freespace3)
+
 }
 
 func BenchmarkFillPage(b *testing.B) {

@@ -68,7 +68,7 @@ func Test_HeapWrite(store dbase.PageStore) {
 
 	for i := 0; i < heapRuns; i++ {
 
-		rid, err := heap.Write(record1)
+		rid, err := heap.Put(record1)
 		if err != nil {
 			log.Fatalf("Write, err: %s", err)
 		}
@@ -160,7 +160,7 @@ func Test_HeapDelete() {
 	heap := dbase.NewHeap(store)
 
 	record1 := []byte("DELETE ME")
-	rid, err := heap.Write(record1)
+	rid, err := heap.Put(record1)
 	if err != nil {
 		log.Fatalf("heap.Write, err: %s", err)
 	}
