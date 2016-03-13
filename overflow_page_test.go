@@ -6,9 +6,11 @@ import (
 
 	"github.com/trpedersen/dbase"
 	randstr "github.com/trpedersen/rand"
+	"os"
+	"time"
 )
 
-func TestFillOverflowPage(t *testing.T) {
+func Test_FillOverflowPageAndMarshal(t *testing.T) {
 
 	page := dbase.NewOverflowPage()
 
@@ -58,7 +60,7 @@ func TestFillOverflowPage(t *testing.T) {
 	}
 	segment2 := make([]byte, dbase.MAX_SEGMENT_LEN)
 	var n int
-	n , err = page.GetSegment(segment2)
+	n, err = page.GetSegment(segment2)
 	if err != nil {
 		t.Fatalf("page.GetSegment, err: %s", err)
 	}
@@ -69,4 +71,61 @@ func TestFillOverflowPage(t *testing.T) {
 		t.Errorf("bytes.Compare, expected: %s, got: %s", segment1, segment2)
 	}
 
+}
+
+func Test_MultipleOverflowPages(t *testing.T) {
+
+	//store, _ := dbase.NewMemoryStore()
+	storepath := tempfile()
+	store, _ := dbase.Open(storepath, 0666, nil)
+	defer logElapsedTime(time.Now(), "Test_MultipleOverflowPages")
+	defer func() {
+		store.Close()
+		os.Remove(store.Path())
+	}()
+
+	segmentCount := int32(200000)
+
+	record1 := []byte(randstr.RandStr(int(segmentCount*int32(dbase.MAX_SEGMENT_LEN)), "alphanum"))
+
+	var prevPage dbase.OverflowPage
+
+	page := dbase.NewOverflowPage()
+	firstPage := page
+	for segmentID := int32(0); segmentID < segmentCount; segmentID++ {
+		offset := segmentID * int32(dbase.MAX_SEGMENT_LEN)
+		page.SetSegment(segmentID, record1[offset:offset+int32(dbase.MAX_SEGMENT_LEN)])
+		pageID, _ := store.New()
+		page.SetID(pageID)
+		if prevPage != nil {
+			page.SetPreviousPageID(prevPage.GetID())
+			prevPage.SetNextPageID(page.GetID())
+			store.Set(prevPage.GetID(), prevPage)
+		}
+		store.Set(page.GetID(), page)
+		prevPage = page
+		page = dbase.NewOverflowPage()
+	}
+	//log.Println(store, firstPage)
+	record2 := make([]byte, segmentCount*int32(dbase.MAX_SEGMENT_LEN))
+	page = firstPage
+	pageId := page.GetID()
+	for {
+		err := store.Get(pageId, page)
+		if err != nil {
+			t.Fatalf("store.Get, err: %s", err)
+		}
+		offset := page.GetSegmentID() * int32(dbase.MAX_SEGMENT_LEN)
+		page.GetSegment(record2[offset:offset+int32(dbase.MAX_SEGMENT_LEN)])
+		pageId = page.GetNextPageID()
+		if pageId <= 0 {
+			break
+		}
+	}
+
+	if bytes.Compare(record1, record2) != 0 {
+		t.Errorf("bytes.Compare\n"+
+		"expecting: %s\n"+
+		"      got: %s", record1, record2)
+	}
 }

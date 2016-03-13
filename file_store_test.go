@@ -168,7 +168,7 @@ func TestSetGet(t *testing.T) {
 
 // tempfile returns a temporary file path.
 func tempfile() string {
-	f, err := ioutil.TempFile("d:/tmp", "db-")
+	f, err := ioutil.TempFile("c:/tmp", "db-")
 	if err != nil {
 		panic(err)
 	}

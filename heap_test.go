@@ -124,7 +124,7 @@ func Test_HeapDelete(t *testing.T) {
 
 func Test_FileUploadSequential(t *testing.T) {
 
-	datapath := "D:/algs4-data/leipzig1M.txt"
+	datapath := "c:/algs4-data/leipzig1M.txt"
 	//path := "D:/algs4-data/mobydick.txt"
 	file, err := os.Open(datapath)
 	if err != nil {
@@ -132,16 +132,16 @@ func Test_FileUploadSequential(t *testing.T) {
 	}
 
 	storepath := tempfile()
-	store, _ = dbase.Open(storepath, 0666, nil)
+	store2, _ := dbase.Open(storepath, 0666, nil)
 
 	defer logElapsedTime(time.Now(), "Test_FileUploadSequential")
 	defer func() {
-		store.Close()
-		os.Remove(store.Path())
+		store2.Close()
+		os.Remove(store2.Path())
 		file.Close()
 	}()
 
-	heap := dbase.NewHeap(store)
+	heap := dbase.NewHeap(store2)
 
 	var heapWrites int
 
@@ -182,7 +182,7 @@ func Test_FileUploadSequential(t *testing.T) {
 
 func Test_FileUploadParallel(t *testing.T) {
 
-	datapath := "D:/algs4-data/leipzig1M.txt"
+	datapath := "c:/algs4-data/leipzig1M.txt"
 	//path := "D:/algs4-data/mobydick.txt"
 	file, err := os.Open(datapath)
 	if err != nil {

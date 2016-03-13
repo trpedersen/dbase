@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"log"
+	//"log"
 )
 
 type OverflowPage interface {
@@ -114,7 +114,6 @@ func (page *overflowPage) UnmarshalBinary(buf []byte) error {
 
 	page.segmentID = int32(binary.LittleEndian.Uint32(page.header[OVERFLOW_SEGMENT_ID_OFFSET:]))
 	page.segmentLength = int(binary.LittleEndian.Uint16(page.header[OVERFLOW_SEGMENT_LEN_OFFSET:]))
-log.Println(OVERFLOW_SEGMENT_OFFSET, OVERFLOW_SEGMENT_OFFSET+page.segmentLength )
 	page.segment = page.bytes[OVERFLOW_SEGMENT_OFFSET : OVERFLOW_SEGMENT_OFFSET+page.segmentLength]
 
 	return nil
@@ -149,10 +148,12 @@ func (page *overflowPage) GetSegment(buf []byte) (int, error) {
 	return n, nil
 }
 
-func (page *overflowPage) SetSegment(segmentNumber int32, buf []byte) error {
+func (page *overflowPage) SetSegment(segmentID int32, buf []byte) error {
 	if len(buf) > int(MAX_SEGMENT_LEN) {
 		return errors.New(fmt.Sprintf("Buffer length (%d) exceeds MAX_SEGMENT_LEN (%d)", len(buf), MAX_SEGMENT_LEN))
 	}
+	page.segmentID = segmentID
+	page.segmentLength = len(page.segment)
 	page.segment = page.segment[0:len(buf)]
 	copy(page.segment, buf)
 	return nil
