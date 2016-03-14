@@ -309,7 +309,7 @@ func (page *heapPage) SetRecord(slotNumber int16, buf []byte) error {
 			panic(err) // TODO: replace panic once fully debugged
 		}
 		copy(page.slotTable[slotOffset:int(slotOffset)+recordLength], buf)
-	case recordLength > int(MAX_RECORD_LEN):
+	case recordLength < int(MAX_RECORD_LEN):
 		return InsufficientPageSpace{PageID: page.id, Slot: slotNumber}
 	default:
 		// the record is too big to fit on a page, so move it on to an overflow page
