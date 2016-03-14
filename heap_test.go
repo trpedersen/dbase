@@ -124,7 +124,7 @@ func Test_HeapDelete(t *testing.T) {
 
 func Test_FileUploadSequential(t *testing.T) {
 
-	datapath := "c:/algs4-data/leipzig1M.txt"
+	datapath := "d:/algs4-data/leipzig1M.txt"
 	//path := "D:/algs4-data/mobydick.txt"
 	file, err := os.Open(datapath)
 	if err != nil {
@@ -182,7 +182,7 @@ func Test_FileUploadSequential(t *testing.T) {
 
 func Test_FileUploadParallel(t *testing.T) {
 
-	datapath := "c:/algs4-data/leipzig1M.txt"
+	datapath := "d:/algs4-data/leipzig1M.txt"
 	//path := "D:/algs4-data/mobydick.txt"
 	file, err := os.Open(datapath)
 	if err != nil {
