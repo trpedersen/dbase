@@ -6,13 +6,14 @@ import (
 	"sync"
 )
 
+// MemoryStore is an in-memory implementation of a page store - useful for testing.
 type MemoryStore interface {
 	PageStore
 }
 
 type memoryStore struct {
 	bufferPool *sync.Pool
-	lastPageId PageID
+	lastPageID PageID
 	count      int64
 	l          sync.Mutex
 	pages      [][]byte
@@ -23,6 +24,8 @@ type memoryStore struct {
 	wipes      int
 }
 
+// NewMemoryStore returns a new MemoryStore. Under the covers
+// it just uses sync.Pool to manage a buffer of page-size bytes
 func NewMemoryStore() (MemoryStore, error) {
 	store := &memoryStore{
 		bufferPool: &sync.Pool{
@@ -32,17 +35,17 @@ func NewMemoryStore() (MemoryStore, error) {
 		},
 	}
 	store.count = 0
-	store.lastPageId = -1
+	store.lastPageID = -1
 	return store, nil
 }
 
 // Get returns the page with ID=id. Caller's responsibility to create page.
 func (store *memoryStore) Get(id PageID, page Page) error {
-	if id > store.lastPageId {
+	if id > store.lastPageID {
 		return errors.New("Invalid page ID")
 	}
 	buf := store.pages[int(id)]
-	store.gets += 1
+	store.gets++
 	return page.UnmarshalBinary(buf)
 }
 
@@ -52,18 +55,18 @@ func (store *memoryStore) Set(id PageID, page Page) error {
 	store.l.Lock()
 	defer store.l.Unlock()
 
-	if id > store.lastPageId {
+	if id > store.lastPageID {
 		return errors.New("Invalid page ID")
 	} else if buf, err := page.MarshalBinary(); err != nil {
 		return err
 	} else {
 		copy(store.pages[int(id)], buf)
 	}
-	store.sets += 1
+	store.sets++
 	return nil
 }
 
-// New creates an empty page at the end of the database file.
+// New creates an empty page at the end of the memory store.
 // Returns the page ID of the new page. Page count & Last page ID will be increased by 1.
 func (store *memoryStore) New() (PageID, error) {
 
@@ -72,13 +75,13 @@ func (store *memoryStore) New() (PageID, error) {
 
 	buf := make([]byte, PAGE_SIZE)
 	store.pages = append(store.pages, buf)
-	store.lastPageId += 1
-	store.count += 1
-	store.news += 1
-	return PageID(store.lastPageId), nil
+	store.lastPageID++
+	store.count++
+	store.news++
+	return PageID(store.lastPageID), nil
 }
 
-// Append appends the given page at the end of the database file.
+// Append appends the given page at the end of the memory store.
 // Returns the page ID of the new page. Page count & Last page ID will be increased by 1.
 func (store *memoryStore) Append(page Page) (PageID, error) {
 
@@ -92,10 +95,10 @@ func (store *memoryStore) Append(page Page) (PageID, error) {
 	buf2 := make([]byte, PAGE_SIZE)
 	copy(buf2, buf)
 	store.pages = append(store.pages, buf2)
-	store.lastPageId += 1
-	store.count += 1
-	store.appends += 1
-	return PageID(store.lastPageId), nil
+	store.lastPageID++
+	store.count++
+	store.appends++
+	return PageID(store.lastPageID), nil
 }
 
 // Wipe zeros out the specified page. It does not reduce page count. Use with care!
@@ -104,14 +107,14 @@ func (store *memoryStore) Wipe(id PageID) error {
 	store.l.Lock()
 	defer store.l.Unlock()
 
-	if id > store.lastPageId {
+	if id > store.lastPageID {
 		return errors.New("Invalid page ID")
 	}
 	buf := store.pages[int(id)]
-	for i, _ := range buf {
+	for i := range buf {
 		buf[i] = 0
 	}
-	store.wipes += 1
+	store.wipes++
 	return nil
 }
 
@@ -120,10 +123,12 @@ func (store *memoryStore) Count() int64 {
 	return int64(len(store.pages))
 }
 
+// Close closes the store.
 func (store *memoryStore) Close() error {
 	return nil
 }
 
+//Statistics returns a string containing stats for gets, sets, news, appends.
 func (store *memoryStore) Statistics() string {
 	return fmt.Sprintf("memory store: gets: %d, sets: %d, news: %d, appends: %d", store.gets, store.sets, store.news, store.appends)
 }

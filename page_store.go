@@ -1,5 +1,6 @@
 package dbase
 
+// PageStore is the primary interface for types that store pages.
 type PageStore interface {
 	Get(id PageID, page Page) error
 	Set(id PageID, page Page) error

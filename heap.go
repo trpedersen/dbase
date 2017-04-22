@@ -100,11 +100,11 @@ func (heap *heap) Clear() error {
 			panic(fmt.Sprintf("NewHeap, err: %s", err))
 		}
 	}
-	// get the header page
+	// set the header page
 	if err := heap.store.Set(0, heap.headerPage); err != nil {
 		panic(fmt.Sprintf("NewHeap, err: %s", err))
 	}
-	// get the last page
+	// set the last page
 	if err := heap.store.Set(heap.headerPage.GetLastPageID(), heap.lastPage); err != nil {
 		panic(fmt.Sprintf("NewHeap, err: %s", err))
 	}

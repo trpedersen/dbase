@@ -20,6 +20,7 @@ const (
 	MAX_RECORD_LEN     = PAGE_SIZE - SLOT_TABLE_OFFSET - (2 * SLOT_TABLE_ENTRY_LEN)
 )
 
+// HeapPage is a page that contains records stored in slots.
 type HeapPage interface {
 	Page
 	//PreviousPageID() PageID
@@ -41,12 +42,13 @@ type heapPage struct {
 	slotTable []byte
 }
 
-var bufferPool *sync.Pool = &sync.Pool{
+var bufferPool = &sync.Pool{
 	New: func() interface{} {
 		return make([]byte, SLOT_TABLE_LEN, SLOT_TABLE_LEN)
 	},
 }
 
+// RecordExceedsMaxSize is an error type
 type RecordExceedsMaxSize struct {
 	PageID PageID
 	Slot   int16
@@ -57,6 +59,7 @@ func (e RecordExceedsMaxSize) Error() string {
 	return fmt.Sprintf("Record exceeds maximum size, PageID: %d, Slot: %d, Len: %d", e.PageID, e.Slot, e.Len)
 }
 
+// RecordDeleted is an error type
 type RecordDeleted struct {
 	PageID PageID
 	Slot   int16
@@ -66,6 +69,7 @@ func (e RecordDeleted) Error() string {
 	return fmt.Sprintf("Record deleted, PageID: %d, Slot: %d", e.PageID, e.Slot)
 }
 
+// InvalidRID is an error type - invalid PageID + slot
 type InvalidRID struct {
 	PageID PageID
 	Slot   int16
@@ -75,6 +79,7 @@ func (e InvalidRID) Error() string {
 	return fmt.Sprintf("Invalid RID, PageID: %d, Slot: %d", e.PageID, e.Slot)
 }
 
+// InsufficientPageSpace is an error type - not enough space in the page for this record
 type InsufficientPageSpace struct {
 	PageID PageID
 	Slot   int16
@@ -84,6 +89,7 @@ func (e InsufficientPageSpace) Error() string {
 	return fmt.Sprintf("Insufficient free space on heap page, PageID: %d, Slot: %d", e.PageID, e.Slot)
 }
 
+// RID is a record ID = PageID + Slot #
 type RID struct {
 	PageID PageID
 	Slot   int16
@@ -234,7 +240,7 @@ func (page *heapPage) AddRecord(record []byte) (int16, error) {
 	page.setSlotFlags(page.slotCount, RECORD_ON_PAGE)
 	page.setSlotOffset(page.slotCount, recordOffset)
 	page.setSlotLength(page.slotCount, int16(recordLength))
-	page.slotCount += 1
+	page.slotCount++
 	copy(page.slotTable[recordOffset:recordOffset+recordLength], record)
 	page.setSlotOffset(0, page.getSlotOffset(0)+int16(recordLength))
 	page.setSlotLength(0, SLOT_TABLE_LEN-page.getSlotOffset(0)-(int16(page.slotCount+1)*SLOT_TABLE_ENTRY_LEN))
