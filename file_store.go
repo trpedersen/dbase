@@ -97,8 +97,8 @@ func (store *fileStore) Close() error {
 	return store.file.Close()
 }
 
-// Get returns the page with ID=id. Caller's responsibility to create page.
-func (store *fileStore) Get(id PageID, page Page) error {
+// Read returns the page with ID=id. Caller's responsibility to create page.
+func (store *fileStore) Read(id PageID, page Page) error {
 	if id > store.lastPageID {
 		return errors.New("Invalid page ID")
 	}
@@ -114,8 +114,8 @@ func (store *fileStore) Get(id PageID, page Page) error {
 
 }
 
-// Set updates the page with id=ID.
-func (store *fileStore) Set(id PageID, page Page) error {
+// Write updates the page with id=ID.
+func (store *fileStore) Write(id PageID, page Page) error {
 
 	store.l.Lock()
 	defer store.l.Unlock()

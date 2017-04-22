@@ -149,11 +149,11 @@ func TestSetGet(t *testing.T) {
 		t.Fatalf("page, err: %s", err)
 	}
 
-	if err = store.Set(id, page); err != nil {
+	if err = store.Write(id, page); err != nil {
 		t.Fatalf("store.Set, err: %s", err)
 	}
 	page.Clear()
-	if err = store.Get(id, page); err != nil {
+	if err = store.Read(id, page); err != nil {
 		t.Fatalf("store.Get, err: %s", err)
 	}
 	record2 := make([]byte, len(record1))

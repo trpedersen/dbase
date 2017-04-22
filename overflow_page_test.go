@@ -100,9 +100,9 @@ func Test_MultipleOverflowPages(t *testing.T) {
 		if prevPage != nil {
 			page.SetPreviousPageID(prevPage.GetID())
 			prevPage.SetNextPageID(page.GetID())
-			store.Set(prevPage.GetID(), prevPage)
+			store.Write(prevPage.GetID(), prevPage)
 		}
-		store.Set(page.GetID(), page)
+		store.Write(page.GetID(), page)
 		prevPage = page
 		page = dbase.NewOverflowPage()
 	}
@@ -111,7 +111,7 @@ func Test_MultipleOverflowPages(t *testing.T) {
 	page = firstPage
 	pageId := page.GetID()
 	for {
-		err := store.Get(pageId, page)
+		err := store.Read(pageId, page)
 		if err != nil {
 			t.Fatalf("store.Get, err: %s", err)
 		}

@@ -84,7 +84,7 @@ func (scanner *heapScanner) Next(buf []byte) (RID, int, error) {
 		case READING_PAGE:
 			//log.Print("READING_PAGE")
 			scanner.pageID += 1
-			err := scanner.heap.Store().Get(scanner.pageID, scanner.page)
+			err := scanner.heap.Store().Read(scanner.pageID, scanner.page)
 			if err != nil {
 				event = EOF
 			} else {

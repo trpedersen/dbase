@@ -47,7 +47,7 @@ func Test_memoryStore_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.store.Get(tt.args.id, tt.args.page); (err != nil) != tt.wantErr {
+			if err := tt.store.Read(tt.args.id, tt.args.page); (err != nil) != tt.wantErr {
 				t.Errorf("memoryStore.Get() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -69,7 +69,7 @@ func Test_memoryStore_Set(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.store.Set(tt.args.id, tt.args.page); (err != nil) != tt.wantErr {
+			if err := tt.store.Write(tt.args.id, tt.args.page); (err != nil) != tt.wantErr {
 				t.Errorf("memoryStore.Set() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -157,4 +157,3 @@ func Test_memoryStore_Close(t *testing.T) {
 		})
 	}
 }
-

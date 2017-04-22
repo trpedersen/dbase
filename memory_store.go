@@ -39,8 +39,8 @@ func NewMemoryStore() (MemoryStore, error) {
 	return store, nil
 }
 
-// Get returns the page with ID=id. Caller's responsibility to create page.
-func (store *memoryStore) Get(id PageID, page Page) error {
+// Read returns the page with ID=id. Caller's responsibility to create page.
+func (store *memoryStore) Read(id PageID, page Page) error {
 	if id > store.lastPageID {
 		return errors.New("Invalid page ID")
 	}
@@ -49,8 +49,8 @@ func (store *memoryStore) Get(id PageID, page Page) error {
 	return page.UnmarshalBinary(buf)
 }
 
-// Set updates the page with id=ID.
-func (store *memoryStore) Set(id PageID, page Page) error {
+// Write updates the page with id=ID.
+func (store *memoryStore) Write(id PageID, page Page) error {
 
 	store.l.Lock()
 	defer store.l.Unlock()
