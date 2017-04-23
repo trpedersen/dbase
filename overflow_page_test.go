@@ -1,30 +1,30 @@
-package dbase_test
+package dbase
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/trpedersen/dbase"
-	randstr "github.com/trpedersen/rand"
 	"os"
 	"time"
+
+	randstr "github.com/trpedersen/rand"
 )
 
 func Test_FillOverflowPageAndMarshal(t *testing.T) {
 
-	page := dbase.NewOverflowPage()
+	page := NewOverflowPage()
 
-	pageID := dbase.PageID(2321323)
-	prevID := dbase.PageID(213245456)
-	nextID := dbase.PageID(192328347)
+	pageID := PageID(2321323)
+	prevID := PageID(213245456)
+	nextID := PageID(192328347)
 
 	page.SetID(pageID)
 	page.SetPreviousPageID(prevID)
 	page.SetNextPageID(nextID)
 
 	segmentID := int32(1234)
-	segment1 := make([]byte, dbase.MAX_SEGMENT_LEN)
-	copy(segment1, randstr.RandStr(int(dbase.MAX_SEGMENT_LEN), "alphanum"))
+	segment1 := make([]byte, maxSegmentLen)
+	copy(segment1, randstr.RandStr(int(maxSegmentLen), "alphanum"))
 
 	err := page.SetSegment(segmentID, segment1)
 	if err != nil {
@@ -55,10 +55,10 @@ func Test_FillOverflowPageAndMarshal(t *testing.T) {
 	if segmentID != page.GetSegmentID() {
 		t.Errorf("segmentID, expected: %d, got: %d", segmentID, page.GetSegmentID())
 	}
-	if int(dbase.MAX_SEGMENT_LEN) != page.GetSegmentLength() {
-		t.Errorf("segmentLength, expected: %d, got: %d", dbase.MAX_SEGMENT_LEN, page.GetSegmentLength())
+	if int(maxSegmentLen) != page.GetSegmentLength() {
+		t.Errorf("segmentLength, expected: %d, got: %d", maxSegmentLen, page.GetSegmentLength())
 	}
-	segment2 := make([]byte, dbase.MAX_SEGMENT_LEN)
+	segment2 := make([]byte, maxSegmentLen)
 	var n int
 	n, err = page.GetSegment(segment2)
 	if err != nil {
@@ -75,9 +75,9 @@ func Test_FillOverflowPageAndMarshal(t *testing.T) {
 
 func Test_MultipleOverflowPages(t *testing.T) {
 
-	//store, _ := dbase.NewMemoryStore()
+	//store, _ := NewMemoryStore()
 	storepath := tempfile()
-	store, _ := dbase.Open(storepath, 0666, nil)
+	store, _ := Open(storepath, 0666, nil)
 	defer logElapsedTime(time.Now(), "Test_MultipleOverflowPages")
 	defer func() {
 		store.Close()
@@ -86,15 +86,15 @@ func Test_MultipleOverflowPages(t *testing.T) {
 
 	segmentCount := int32(200000)
 
-	record1 := []byte(randstr.RandStr(int(segmentCount*int32(dbase.MAX_SEGMENT_LEN)), "alphanum"))
+	record1 := []byte(randstr.RandStr(int(segmentCount*int32(maxSegmentLen)), "alphanum"))
 
-	var prevPage dbase.OverflowPage
+	var prevPage OverflowPage
 
-	page := dbase.NewOverflowPage()
+	page := NewOverflowPage()
 	firstPage := page
 	for segmentID := int32(0); segmentID < segmentCount; segmentID++ {
-		offset := segmentID * int32(dbase.MAX_SEGMENT_LEN)
-		page.SetSegment(segmentID, record1[offset:offset+int32(dbase.MAX_SEGMENT_LEN)])
+		offset := segmentID * int32(maxSegmentLen)
+		page.SetSegment(segmentID, record1[offset:offset+int32(maxSegmentLen)])
 		pageID, _ := store.New()
 		page.SetID(pageID)
 		if prevPage != nil {
@@ -104,21 +104,21 @@ func Test_MultipleOverflowPages(t *testing.T) {
 		}
 		store.Write(page.GetID(), page)
 		prevPage = page
-		page = dbase.NewOverflowPage()
+		page = NewOverflowPage()
 	}
 	//log.Println(store, firstPage)
-	record2 := make([]byte, segmentCount*int32(dbase.MAX_SEGMENT_LEN))
+	record2 := make([]byte, segmentCount*int32(maxSegmentLen))
 	page = firstPage
-	pageId := page.GetID()
+	pageID := page.GetID()
 	for {
-		err := store.Read(pageId, page)
+		err := store.Read(pageID, page)
 		if err != nil {
 			t.Fatalf("store.Get, err: %s", err)
 		}
-		offset := page.GetSegmentID() * int32(dbase.MAX_SEGMENT_LEN)
-		page.GetSegment(record2[offset : offset+int32(dbase.MAX_SEGMENT_LEN)])
-		pageId = page.GetNextPageID()
-		if pageId <= 0 {
+		offset := page.GetSegmentID() * int32(maxSegmentLen)
+		page.GetSegment(record2[offset : offset+int32(maxSegmentLen)])
+		pageID = page.GetNextPageID()
+		if pageID <= 0 {
 			break
 		}
 	}

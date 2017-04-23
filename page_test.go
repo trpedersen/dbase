@@ -1,14 +1,12 @@
-package dbase_test
+package dbase
 
 import (
 	"testing"
-
-	"github.com/trpedersen/dbase"
 )
 
 func TestPageSetGetIDType(t *testing.T) {
 
-	page := dbase.NewHeapPage().(dbase.Page)
+	page := NewHeapPage().(Page)
 
 	err := page.SetID(17)
 	if err != nil {
@@ -21,8 +19,8 @@ func TestPageSetGetIDType(t *testing.T) {
 	}
 
 	pageType := page.GetType()
-	if pageType != dbase.PAGE_TYPE_HEAP {
-		t.Fatalf("Page type, expected: %d, got: %d", dbase.PAGE_TYPE_HEAP, pageType)
+	if pageType != pageTypeHeap {
+		t.Fatalf("Page type, expected: %d, got: %d", pageTypeHeap, pageType)
 	}
 
 }

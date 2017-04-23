@@ -5,20 +5,23 @@
 package dbase
 
 const (
-	PAGE_SIZE        = int16(8192)                 // PAGE_SIZE is typically the same as the filesystem blocksize
-	PAGE_HEADER_LEN  = 56                          // bytes
-	MAX_PAGE_PAYLOAD = PAGE_SIZE - PAGE_HEADER_LEN // Maximum page payload bytes
+	// PageSize is typically the same as the filesystem blocksize
+	PageSize = int16(8192)
+
+	pageHeaderLength = 56                          // bytes
+	maxPagePayload   = PageSize - pageHeaderLength // Maximum page payload bytes
 
 	// Page buffer offsets for page fields
-	PAGE_ID_OFFSET   = 0
-	PAGE_TYPE_OFFSET = 8 // single bytes
+	pageIDOffset   = 0
+	pageTypeOffset = 8 // single bytes
 
 	// Page types:
-	DB_HEADER_PAGE        = PageType(0x01)
-	DB_DIRECTORY_PAGE     = PageType(0x02)
-	PAGE_TYPE_HEAP        = PageType(0x03)
-	PAGE_TYPE_HEAP_HEADER = PageType(0x04)
-	PAGE_TYPE_OVERFLOW    = PageType(0x05)
+	dbHeaderPage          = PageType(0x01)
+	dbDirectoryPage       = PageType(0x02)
+	pageTypeHeap          = PageType(0x03)
+	pageTypeHeapHeader    = PageType(0x04)
+	pageTypeOverflow      = PageType(0x05)
+	pageTypeAllocationMap = PageType(0x06)
 )
 
 // PageID is (usually) the same as the block number on disk

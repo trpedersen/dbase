@@ -1,14 +1,12 @@
-package dbase_test
+package dbase
 
 import (
 	"bytes"
 	"testing"
-
-	"github.com/trpedersen/dbase"
 )
 
 func Test_FillPage(t *testing.T) {
-	page := dbase.NewHeapPage()
+	page := NewHeapPage()
 	recLen := 107
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
 		record1 := make([]byte, recLen)
@@ -28,7 +26,7 @@ func Test_FillPage(t *testing.T) {
 }
 
 func Test_MarshalBinary(t *testing.T) {
-	page1 := dbase.NewHeapPage()
+	page1 := NewHeapPage()
 	recLen := 107
 	for i := 0; page1.GetFreeSpace() > recLen; i++ {
 		record := make([]byte, recLen)
@@ -45,7 +43,7 @@ func Test_MarshalBinary(t *testing.T) {
 		t.Fatalf("page1.MarshalBinary, err: %s", err)
 	}
 
-	page2 := dbase.NewHeapPage()
+	page2 := NewHeapPage()
 
 	err = page2.UnmarshalBinary(pageBytes)
 	if err != nil {
@@ -74,7 +72,7 @@ func Test_MarshalBinary(t *testing.T) {
 }
 
 func Test_DeleteRecords(t *testing.T) {
-	page := dbase.NewHeapPage()
+	page := NewHeapPage()
 	recLen := 97
 	for i := 0; page.GetFreeSpace() > recLen; i++ {
 		record1 := make([]byte, recLen)
@@ -102,7 +100,7 @@ func Test_DeleteRecords(t *testing.T) {
 		}
 	}
 
-	expectedFreeSpace := int(dbase.SLOT_TABLE_LEN - (page.GetSlotCount()+1)*dbase.SLOT_TABLE_ENTRY_LEN)
+	expectedFreeSpace := int(slotTableLen - (page.GetSlotCount()+1)*slotTableEntryLen)
 
 	if page.GetFreeSpace() != expectedFreeSpace {
 		t.Errorf("freespace, expected: %d, got: %d", expectedFreeSpace, page.GetFreeSpace())
@@ -113,7 +111,7 @@ func Test_DeleteRecords(t *testing.T) {
 }
 
 func Test_ResizeRecords(t *testing.T) {
-	page := dbase.NewHeapPage()
+	page := NewHeapPage()
 
 	count := 50
 	recLen := page.GetFreeSpace() / count / 3 // need to take into account slots
@@ -173,7 +171,7 @@ func Test_ResizeRecords(t *testing.T) {
 }
 
 func BenchmarkFillPage(b *testing.B) {
-	page := dbase.NewHeapPage()
+	page := NewHeapPage()
 	recLen := 10
 	record1 := make([]byte, recLen)
 	record2 := make([]byte, recLen)

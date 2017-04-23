@@ -1,4 +1,4 @@
-package dbase_test
+package dbase
 
 import (
 	"io/ioutil"
@@ -7,13 +7,12 @@ import (
 	"testing"
 
 	"bytes"
-	"github.com/trpedersen/dbase"
 )
 
 // Ensure that a file store can be opened without error.
 func TestOpen(t *testing.T) {
 	path := tempfile()
-	store, err := dbase.Open(path, 0666, nil)
+	store, err := Open(path, 0666, nil)
 	defer func() {
 		store.Close()
 		os.Remove(store.Path())
@@ -36,7 +35,7 @@ func TestOpen(t *testing.T) {
 
 // Ensure that opening a database with a blank path returns an error.
 func TestOpen_ErrPathRequired(t *testing.T) {
-	_, err := dbase.Open("", 0666, nil)
+	_, err := Open("", 0666, nil)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -44,7 +43,7 @@ func TestOpen_ErrPathRequired(t *testing.T) {
 
 // Ensure that opening a database with a bad path returns an error.
 func TestOpen_ErrNotExists(t *testing.T) {
-	_, err := dbase.Open(filepath.Join(tempfile(), "bad-path"), 0666, nil)
+	_, err := Open(filepath.Join(tempfile(), "bad-path"), 0666, nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -53,7 +52,7 @@ func TestOpen_ErrNotExists(t *testing.T) {
 func TestCreateAndReopenDB(t *testing.T) {
 
 	path := tempfile()
-	store, err := dbase.Open(path, 0666, nil)
+	store, err := Open(path, 0666, nil)
 	defer func() {
 		store.Close()
 		os.Remove(store.Path())
@@ -69,18 +68,18 @@ func TestCreateAndReopenDB(t *testing.T) {
 		t.Errorf("Invalid page count, expect: 0, got: %d", pageCount)
 	}
 
-	const PAGE_RUN = 1024
+	const pageRun = 1024
 
-	for i := 0; i < PAGE_RUN; i++ {
+	for i := 0; i < pageRun; i++ {
 		store.New()
 	}
 
 	store.Close()
 
-	if store, err = dbase.Open(path, 0666, nil); err != nil {
+	if store, err = Open(path, 0666, nil); err != nil {
 		t.Fatalf("db.Open, err: %s", err)
 	}
-	if pageCount := store.Count(); pageCount != PAGE_RUN {
+	if pageCount := store.Count(); pageCount != pageRun {
 		t.Errorf("Invalid page count, expect: 0, got: %d", pageCount)
 	}
 	store.Close()
@@ -90,7 +89,7 @@ func TestCreateAndReopenDB(t *testing.T) {
 func TestNewPages(t *testing.T) {
 
 	path := tempfile()
-	store, err := dbase.Open(path, 0666, nil)
+	store, err := Open(path, 0666, nil)
 	defer func() {
 		store.Close()
 		os.Remove(store.Path())
@@ -102,18 +101,18 @@ func TestNewPages(t *testing.T) {
 		t.Fatal("expected db")
 	}
 
-	const PAGE_RUN = 1024
+	const pageRun = 1024
 
-	for i := 0; i < PAGE_RUN; i++ {
+	for i := 0; i < pageRun; i++ {
 		store.New()
 	}
 
 	store.Close()
 
-	if store, err = dbase.Open(path, 0666, nil); err != nil {
+	if store, err = Open(path, 0666, nil); err != nil {
 		t.Fatalf("db.Open, err: %s", err)
 	}
-	if pageCount := store.Count(); pageCount != PAGE_RUN {
+	if pageCount := store.Count(); pageCount != pageRun {
 		t.Errorf("Invalid page count, expect: 0, got: %d", pageCount)
 	}
 	store.Close()
@@ -123,7 +122,7 @@ func TestNewPages(t *testing.T) {
 func TestSetGet(t *testing.T) {
 
 	path := tempfile()
-	store, err := dbase.Open(path, 0666, nil)
+	store, err := Open(path, 0666, nil)
 
 	defer func() {
 		store.Close()
@@ -136,10 +135,10 @@ func TestSetGet(t *testing.T) {
 		t.Fatal("expected db")
 	}
 
-	page := dbase.NewHeapPage()
+	page := NewHeapPage()
 
 	record1 := []byte("TESTING")
-	var id dbase.PageID
+	var id PageID
 	var slot int16
 	if id, err = store.Append(page); err != nil {
 		t.Fatalf("store.Append, err: %s", err)

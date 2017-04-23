@@ -2,12 +2,12 @@ package dbase
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"sync"
 	//"log"
 )
 
+// OverflowPage is used to store records that exceed maximum record length on a heap page.
 type OverflowPage interface {
 	Page
 
@@ -23,13 +23,13 @@ type OverflowPage interface {
 }
 
 const (
-	OVERFLOW_PREVIOUS_ID_OFFSET = 9
-	OVERFLOW_NEXT_ID_OFFSET     = 17
-	OVERFLOW_SEGMENT_ID_OFFSET  = 25
-	OVERFLOW_SEGMENT_LEN_OFFSET = 29
-	OVERFLOW_SEGMENT_OFFSET     = PAGE_HEADER_LEN
-	OVERFLOW_SEGMENT_LEN        = PAGE_SIZE - OVERFLOW_SEGMENT_OFFSET
-	MAX_SEGMENT_LEN             = PAGE_SIZE - PAGE_HEADER_LEN
+	overflowPreviousIDOffset = 9
+	overflowNextIDOffset     = 17
+	overflowSegmentIDOffset  = 25
+	overflowSegmentLenOffset = 29
+	overflowSegmentOffset    = pageHeaderLength
+	overflowSegmentLen       = PageSize - overflowSegmentOffset
+	maxSegmentLen            = PageSize - pageHeaderLength
 )
 
 type overflowPage struct {
@@ -51,16 +51,16 @@ func NewOverflowPage() OverflowPage {
 	page := &overflowPage{
 		page: page{
 			id:       0,
-			pagetype: PAGE_TYPE_OVERFLOW,
-			bytes:    make([]byte, PAGE_SIZE, PAGE_SIZE),
+			pagetype: pageTypeOverflow,
+			bytes:    make([]byte, PageSize, PageSize),
 		},
 		l:             &sync.Mutex{},
 		segmentID:     -1,
 		segmentLength: -1,
 	}
 
-	page.header = page.bytes[0:PAGE_HEADER_LEN]
-	page.segment = page.bytes[OVERFLOW_SEGMENT_OFFSET : OVERFLOW_SEGMENT_OFFSET+OVERFLOW_SEGMENT_LEN]
+	page.header = page.bytes[0:pageHeaderLength]
+	page.segment = page.bytes[overflowSegmentOffset : overflowSegmentOffset+overflowSegmentLen]
 
 	return page
 }
@@ -72,15 +72,15 @@ func (page *overflowPage) MarshalBinary() ([]byte, error) {
 	page.l.Lock()
 	defer page.l.Unlock()
 
-	binary.LittleEndian.PutUint64(page.header[PAGE_ID_OFFSET:], uint64(page.id))
-	page.header[PAGE_TYPE_OFFSET] = byte(PAGE_TYPE_OVERFLOW)
+	binary.LittleEndian.PutUint64(page.header[pageIDOffset:], uint64(page.id))
+	page.header[pageTypeOffset] = byte(pageTypeOverflow)
 
 	// TODO: overflow page fields
-	binary.LittleEndian.PutUint64(page.header[OVERFLOW_PREVIOUS_ID_OFFSET:], uint64(page.previousID))
-	binary.LittleEndian.PutUint64(page.header[OVERFLOW_NEXT_ID_OFFSET:], uint64(page.nextID))
+	binary.LittleEndian.PutUint64(page.header[overflowPreviousIDOffset:], uint64(page.previousID))
+	binary.LittleEndian.PutUint64(page.header[overflowNextIDOffset:], uint64(page.nextID))
 
-	binary.LittleEndian.PutUint32(page.header[OVERFLOW_SEGMENT_ID_OFFSET:], uint32(page.segmentID))
-	binary.LittleEndian.PutUint16(page.header[OVERFLOW_SEGMENT_LEN_OFFSET:], uint16(page.segmentLength))
+	binary.LittleEndian.PutUint32(page.header[overflowSegmentIDOffset:], uint32(page.segmentID))
+	binary.LittleEndian.PutUint16(page.header[overflowSegmentLenOffset:], uint16(page.segmentLength))
 
 	return page.bytes, nil
 }
@@ -92,29 +92,29 @@ func (page *overflowPage) UnmarshalBinary(buf []byte) error {
 	page.l.Lock()
 	defer page.l.Unlock()
 
-	if len(buf) != int(PAGE_SIZE) {
+	if len(buf) != int(PageSize) {
 		panic("Invalid buffer")
 	}
 	// check page type, panic if wrong
-	pageType := PageType(buf[PAGE_TYPE_OFFSET])
-	if pageType != PAGE_TYPE_OVERFLOW {
+	pageType := PageType(buf[pageTypeOffset])
+	if pageType != pageTypeOverflow {
 		panic("Invalid page type")
 	}
 
 	copy(page.bytes, buf)
 
-	page.header = page.bytes[0:PAGE_HEADER_LEN]
+	page.header = page.bytes[0:pageHeaderLength]
 
-	page.id = PageID(binary.LittleEndian.Uint64(page.header[PAGE_ID_OFFSET:]))
-	page.pagetype = PAGE_TYPE_OVERFLOW
+	page.id = PageID(binary.LittleEndian.Uint64(page.header[pageIDOffset:]))
+	page.pagetype = pageTypeOverflow
 
 	// TODO: overflow page fields
-	page.previousID = PageID(binary.LittleEndian.Uint64(page.header[OVERFLOW_PREVIOUS_ID_OFFSET:]))
-	page.nextID = PageID(binary.LittleEndian.Uint64(page.header[OVERFLOW_NEXT_ID_OFFSET:]))
+	page.previousID = PageID(binary.LittleEndian.Uint64(page.header[overflowPreviousIDOffset:]))
+	page.nextID = PageID(binary.LittleEndian.Uint64(page.header[overflowNextIDOffset:]))
 
-	page.segmentID = int32(binary.LittleEndian.Uint32(page.header[OVERFLOW_SEGMENT_ID_OFFSET:]))
-	page.segmentLength = int(binary.LittleEndian.Uint16(page.header[OVERFLOW_SEGMENT_LEN_OFFSET:]))
-	page.segment = page.bytes[OVERFLOW_SEGMENT_OFFSET : OVERFLOW_SEGMENT_OFFSET+page.segmentLength]
+	page.segmentID = int32(binary.LittleEndian.Uint32(page.header[overflowSegmentIDOffset:]))
+	page.segmentLength = int(binary.LittleEndian.Uint16(page.header[overflowSegmentLenOffset:]))
+	page.segment = page.bytes[overflowSegmentOffset : overflowSegmentOffset+page.segmentLength]
 
 	return nil
 }
@@ -149,8 +149,8 @@ func (page *overflowPage) GetSegment(buf []byte) (int, error) {
 }
 
 func (page *overflowPage) SetSegment(segmentID int32, buf []byte) error {
-	if len(buf) > int(MAX_SEGMENT_LEN) {
-		return errors.New(fmt.Sprintf("Buffer length (%d) exceeds MAX_SEGMENT_LEN (%d)", len(buf), MAX_SEGMENT_LEN))
+	if len(buf) > int(maxSegmentLen) {
+		return fmt.Errorf("Buffer length (%d) exceeds MAX_SEGMENT_LEN (%d)", len(buf), maxSegmentLen)
 	}
 	page.segmentID = segmentID
 	page.segmentLength = len(page.segment)

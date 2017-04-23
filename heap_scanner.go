@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// HeapScanner is an iterable
 type HeapScanner interface {
 	Next(buf []byte) (RID, int, error)
 }
@@ -19,26 +20,29 @@ type heapScanner struct {
 	state  int
 }
 
+// Scanner States
 const (
-	READING_PAGE int = 1 + iota
-	READING_RECORD
-	AT_EOF
-	AT_BOF
+	_ReadingPage int = 1 + iota
+	_ReadingRecord
+	_AtEOF
+	_AtBOF
 )
 
+// Scanner Events
 const (
-	RECORD_READ int = 1 + iota
-	DELETED_RECORD_READ
-	END_OF_PAGE_REACHED
-	PAGE_READ
-	EOF
+	_RecordRead int = 1 + iota
+	_DeletedRecordRead
+	_EndOfPageReached
+	_PageRead
+	_EOF
 )
 
+// NewHeapScanner returns a new heap scanner
 func NewHeapScanner(heap Heap) HeapScanner {
 	scanner := &heapScanner{
 		slotID: 0,
 		pageID: 0,
-		state:  AT_BOF,
+		state:  _AtBOF,
 		heap:   heap,
 		page:   NewHeapPage(),
 		l:      &sync.Mutex{},
@@ -55,51 +59,51 @@ func (scanner *heapScanner) Next(buf []byte) (RID, int, error) {
 	for {
 		switch scanner.state {
 
-		case AT_BOF:
+		case _AtBOF:
 			//log.Println("AT_BOF")
-			scanner.state = READING_PAGE
-		case READING_RECORD:
+			scanner.state = _ReadingPage
+		case _ReadingRecord:
 			//log.Print("READING_RECORD")
-			scanner.slotID += 1
+			scanner.slotID++
 			n, err := scanner.page.GetRecord(scanner.slotID, buf)
 			if err != nil {
 				if _, ok := err.(RecordDeleted); ok {
-					event = DELETED_RECORD_READ
+					event = _DeletedRecordRead
 				} else {
-					event = END_OF_PAGE_REACHED
+					event = _EndOfPageReached
 				}
 			} else {
-				event = RECORD_READ
+				event = _RecordRead
 			}
 			//log.Println(event)
 			switch event {
-			case RECORD_READ:
-				scanner.state = READING_RECORD
+			case _RecordRead:
+				scanner.state = _ReadingRecord
 				return RID{Slot: scanner.slotID, PageID: scanner.pageID}, n, nil
-			case DELETED_RECORD_READ:
-				scanner.state = READING_RECORD
-			case END_OF_PAGE_REACHED:
-				scanner.state = READING_PAGE
+			case _DeletedRecordRead:
+				scanner.state = _ReadingRecord
+			case _EndOfPageReached:
+				scanner.state = _ReadingPage
 			}
-		case READING_PAGE:
+		case _ReadingPage:
 			//log.Print("READING_PAGE")
-			scanner.pageID += 1
+			scanner.pageID++
 			err := scanner.heap.Store().Read(scanner.pageID, scanner.page)
 			if err != nil {
-				event = EOF
+				event = _EOF
 			} else {
-				event = PAGE_READ
+				event = _PageRead
 			}
 			//log.Println(event)
 			switch event {
-			case EOF:
-				scanner.state = AT_EOF
+			case _EOF:
+				scanner.state = _AtEOF
 				return RID{}, 0, io.EOF
-			case PAGE_READ:
+			case _PageRead:
 				scanner.slotID = 0
-				scanner.state = READING_RECORD
+				scanner.state = _ReadingRecord
 			}
-		case AT_EOF:
+		case _AtEOF:
 			//log.Println("AT_EOF")
 			return RID{}, 0, io.EOF
 		}

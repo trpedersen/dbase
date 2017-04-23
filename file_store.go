@@ -47,7 +47,7 @@ func Open(path string, mode os.FileMode, options *FileStoreOptions) (FileStore, 
 		path:     path,
 		bufferPool: &sync.Pool{
 			New: func() interface{} {
-				return make([]byte, PAGE_SIZE, PAGE_SIZE)
+				return make([]byte, PageSize, PageSize)
 			},
 		},
 	}
@@ -75,7 +75,7 @@ func Open(path string, mode os.FileMode, options *FileStoreOptions) (FileStore, 
 	}
 	size := fi.Size()
 	if size != 0 {
-		store.count = int64(size / int64(PAGE_SIZE))
+		store.count = int64(size / int64(PageSize))
 		store.lastPageID = PageID(store.count - 1)
 	} else {
 		store.count = 0
@@ -107,7 +107,7 @@ func (store *fileStore) Read(id PageID, page Page) error {
 	defer store.bufferPool.Put(buf)
 
 	store.gets++
-	if n, err := store.file.ReadAt(buf, int64(id)*int64(PAGE_SIZE)); err != nil || n != int(PAGE_SIZE) {
+	if n, err := store.file.ReadAt(buf, int64(id)*int64(PageSize)); err != nil || n != int(PageSize) {
 		return err
 	}
 	return page.UnmarshalBinary(buf)
@@ -126,7 +126,7 @@ func (store *fileStore) Write(id PageID, page Page) error {
 		return errors.New("Invalid page ID")
 	} else if buf, err := page.MarshalBinary(); err != nil {
 		return err
-	} else if _, err := store.file.WriteAt(buf, int64(id)*int64(PAGE_SIZE)); err != nil {
+	} else if _, err := store.file.WriteAt(buf, int64(id)*int64(PageSize)); err != nil {
 		return err
 	}
 	store.sets++
@@ -191,7 +191,7 @@ func (store *fileStore) Wipe(id PageID) error {
 		buf[i] = 0
 	}
 
-	if _, err := store.file.WriteAt(buf, int64(id)*int64(PAGE_SIZE)); err != nil {
+	if _, err := store.file.WriteAt(buf, int64(id)*int64(PageSize)); err != nil {
 		return err
 	}
 	store.wipes++

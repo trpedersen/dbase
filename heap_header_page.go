@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 )
 
+// HeapHeaderPage is the first data page in a store, contains stats and pointers to important pages at known locations.
 type HeapHeaderPage interface {
 	Page
 	GetRecordCount() int64
@@ -14,26 +15,27 @@ type HeapHeaderPage interface {
 
 type heapHeaderPage struct {
 	page
-	lastPageId  PageID // total number of pages in file
+	lastPageID  PageID // total number of pages in file
 	recordCount int64
 }
 
 const (
-	HEAP_LAST_PAGE_ID_OFFSET = 9
-	HEAP_RECORD_COUNT_OFFSET = 17
+	heapLastPageIDOffset  = 9
+	heapRecordCountOffset = 17
 )
 
+// NewHeapHeaderPage returns a new heap header page.
 func NewHeapHeaderPage() HeapHeaderPage {
 	page := &heapHeaderPage{
 		page: page{
 			id:       0,
-			pagetype: PAGE_TYPE_HEAP_HEADER,
-			bytes:    make([]byte, PAGE_SIZE, PAGE_SIZE),
+			pagetype: pageTypeHeapHeader,
+			bytes:    make([]byte, PageSize, PageSize),
 		},
-		lastPageId:  1,
+		lastPageID:  1,
 		recordCount: 0,
 	}
-	page.header = page.bytes[0:PAGE_HEADER_LEN]
+	page.header = page.bytes[0:pageHeaderLength]
 	return page
 }
 
@@ -46,22 +48,22 @@ func (page *heapHeaderPage) SetRecordCount(count int64) {
 }
 
 func (page *heapHeaderPage) GetLastPageID() PageID {
-	return page.lastPageId
+	return page.lastPageID
 }
 
 func (page *heapHeaderPage) SetLastPageID(id PageID) {
-	page.lastPageId = id
+	page.lastPageID = id
 }
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 // The page is encoded as a []byte PAGE_SIZE long, ready for serialisation.
 func (page *heapHeaderPage) MarshalBinary() ([]byte, error) {
 
-	binary.LittleEndian.PutUint64(page.header[PAGE_ID_OFFSET:], uint64(page.id))
-	page.header[PAGE_TYPE_OFFSET] = byte(PAGE_TYPE_HEAP_HEADER)
+	binary.LittleEndian.PutUint64(page.header[pageIDOffset:], uint64(page.id))
+	page.header[pageTypeOffset] = byte(pageTypeHeapHeader)
 
-	binary.LittleEndian.PutUint64(page.header[HEAP_LAST_PAGE_ID_OFFSET:], uint64(page.lastPageId))
-	binary.LittleEndian.PutUint64(page.header[HEAP_RECORD_COUNT_OFFSET:], uint64(page.recordCount))
+	binary.LittleEndian.PutUint64(page.header[heapLastPageIDOffset:], uint64(page.lastPageID))
+	binary.LittleEndian.PutUint64(page.header[heapRecordCountOffset:], uint64(page.recordCount))
 	return page.bytes, nil
 }
 
@@ -69,22 +71,22 @@ func (page *heapHeaderPage) MarshalBinary() ([]byte, error) {
 // PAGE_SIZE bytes are used to rehydrate the page.
 func (page *heapHeaderPage) UnmarshalBinary(buf []byte) error {
 
-	if len(buf) != int(PAGE_SIZE) {
+	if len(buf) != int(PageSize) {
 		panic("Invalid buffer")
 	}
 	// check page type, panic if wrong
-	pageType := PageType(buf[PAGE_TYPE_OFFSET])
-	if pageType != PAGE_TYPE_HEAP_HEADER {
+	pageType := PageType(buf[pageTypeOffset])
+	if pageType != pageTypeHeapHeader {
 		panic("Invalid page type")
 	}
 	copy(page.bytes, buf)
-	page.header = page.bytes[0:PAGE_HEADER_LEN]
+	page.header = page.bytes[0:pageHeaderLength]
 
-	page.id = PageID(binary.LittleEndian.Uint64(page.header[PAGE_ID_OFFSET:]))
-	page.pagetype = PAGE_TYPE_HEAP_HEADER
+	page.id = PageID(binary.LittleEndian.Uint64(page.header[pageIDOffset:]))
+	page.pagetype = pageTypeHeapHeader
 
-	page.lastPageId = PageID(binary.LittleEndian.Uint64(page.header[HEAP_LAST_PAGE_ID_OFFSET:]))
-	page.recordCount = int64(binary.LittleEndian.Uint64(page.header[HEAP_RECORD_COUNT_OFFSET:]))
+	page.lastPageID = PageID(binary.LittleEndian.Uint64(page.header[heapLastPageIDOffset:]))
+	page.recordCount = int64(binary.LittleEndian.Uint64(page.header[heapRecordCountOffset:]))
 
 	return nil
 }

@@ -31,6 +31,7 @@ type heap struct {
 	deletes    int
 }
 
+// NewHeap returns a new Heap
 func NewHeap(store PageStore) Heap {
 	heap := &heap{
 		l:     &sync.Mutex{},
@@ -164,7 +165,7 @@ func (heap *heap) Put(buf []byte) (RID, error) {
 	rid.PageID = heap.headerPage.GetLastPageID()
 	rid.Slot = slot
 
-	heap.writes += 1
+	heap.writes++
 
 	return rid, nil
 }
@@ -179,7 +180,7 @@ func (heap *heap) Get(rid RID, buf []byte) (int, error) {
 		return 0, err
 	}
 	n, err := page.GetRecord(rid.Slot, buf)
-	heap.gets += 1
+	heap.gets++
 	return n, err
 }
 
@@ -203,7 +204,7 @@ func (heap *heap) Set(rid RID, buf []byte) error {
 	}
 	err = heap.store.Write(rid.PageID, page)
 
-	heap.sets += 1
+	heap.sets++
 
 	return err
 }
@@ -227,7 +228,7 @@ func (heap *heap) Delete(rid RID) error {
 		return err
 	}
 	err = heap.store.Write(rid.PageID, page)
-	heap.deletes += 1
+	heap.deletes++
 	return err
 }
 

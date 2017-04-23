@@ -30,7 +30,7 @@ func NewMemoryStore() (MemoryStore, error) {
 	store := &memoryStore{
 		bufferPool: &sync.Pool{
 			New: func() interface{} {
-				return make([]byte, PAGE_SIZE, PAGE_SIZE)
+				return make([]byte, PageSize, PageSize)
 			},
 		},
 	}
@@ -73,7 +73,7 @@ func (store *memoryStore) New() (PageID, error) {
 	store.l.Lock()
 	defer store.l.Unlock()
 
-	buf := make([]byte, PAGE_SIZE)
+	buf := make([]byte, PageSize)
 	store.pages = append(store.pages, buf)
 	store.lastPageID++
 	store.count++
@@ -92,7 +92,7 @@ func (store *memoryStore) Append(page Page) (PageID, error) {
 	if err != nil {
 		return 0, err
 	}
-	buf2 := make([]byte, PAGE_SIZE)
+	buf2 := make([]byte, PageSize)
 	copy(buf2, buf)
 	store.pages = append(store.pages, buf2)
 	store.lastPageID++
