@@ -16,7 +16,7 @@ type AllocationPage interface {
 	GetAllocationBitMap() AllocationBitMap
 }
 type allocationPage struct {
-	l *sync.Mutex
+	sync.Mutex
 	page
 	allocationBitMapBytes []byte
 }
@@ -29,7 +29,7 @@ func NewAllocationPage() AllocationPage {
 			pagetype: pageTypeAllocationMap,
 			bytes:    make([]byte, PageSize, PageSize),
 		},
-		l: &sync.Mutex{},
+		//l: &sync.Mutex{},
 	}
 	page.header = page.bytes[0:pageHeaderLength]
 	page.allocationBitMapBytes = page.bytes[allocationBitMapOffset : allocationBitMapOffset+allocationBitMapLen]
@@ -46,8 +46,8 @@ func (page *allocationPage) GetAllocationBitMap() AllocationBitMap {
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 // The page is encoded as a []byte PAGE_SIZE long, ready for serialisation.
 func (page *allocationPage) MarshalBinary() ([]byte, error) {
-	page.l.Lock()
-	defer page.l.Unlock()
+	page.Lock()
+	defer page.Unlock()
 	binary.LittleEndian.PutUint64(page.header[pageIDOffset:], uint64(page.id))
 	page.header[pageTypeOffset] = byte(pageTypeAllocationMap)
 	return page.bytes, nil
@@ -56,8 +56,8 @@ func (page *allocationPage) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 // PAGE_SIZE bytes are used to rehydrate the page.
 func (page *allocationPage) UnmarshalBinary(buf []byte) error {
-	page.l.Lock()
-	defer page.l.Unlock()
+	page.Lock()
+	defer page.Unlock()
 	if len(buf) != int(PageSize) {
 		panic("Invalid buffer")
 	}
