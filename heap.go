@@ -40,7 +40,7 @@ func NewHeap(store PageStore) Heap {
 		headerPage: NewHeapHeaderPage(),
 		lastPage:   NewHeapPage(),
 		pagePool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return NewHeapPage()
 			},
 		},
@@ -135,10 +135,10 @@ func (heap *heap) Put(buf []byte) (RID, error) {
 		return rid, errors.New("Zero length record")
 	}
 
-	len := len(buf)
+	bufLen := len(buf)
 
 	free := heap.lastPage.GetFreeSpace()
-	if len > int(free) {
+	if bufLen > int(free) {
 		// insufficient space, so make a new page
 		heap.lastPage.Clear()
 		var id PageID
@@ -235,30 +235,3 @@ func (heap *heap) Delete(rid RID) error {
 func (heap *heap) Statistics() string {
 	return fmt.Sprintf("heap: writes: %d, gets: %d, sets: %d, deletes: %d", heap.writes, heap.gets, heap.sets, heap.deletes)
 }
-
-//func (heap *Heap) Write(buf []byte) error {
-//	len := len(buf)
-//	if len > MAX_PAGE_PAYLOAD {
-//		buf = buf[0:MAX_PAGE_PAYLOAD]
-//		len = MAX_PAGE_PAYLOAD
-//	}
-//
-//	// find a page with sufficient space
-//	percentFullReqd := int(100 - (100 * len / MAX_PAGE_PAYLOAD))
-//	var flag byte
-//	switch {
-//	case percentFullReqd == 0:
-//		flag = DIR_PAGE_EMPTY
-//	case 1 < percentFullReqd <= 50:
-//		flag = DIR_PAGE_1_50
-//	case 50 < percentFullReqd <= 80:
-//		flag = DIR_PAGE_51_80
-//	case 80 < percentFullReqd <= 95:
-//		flag = DIR_PAGE_81_95
-//	case 95 < percentFullReqd < 100:
-//		flag = DIR_PAGE_96_100
-//	default:
-//		flag = DIR_PAGE_EMPTY
-//	}
-//	page := heap.dir.
-//}

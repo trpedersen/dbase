@@ -67,7 +67,7 @@ func Test_FillOverflowPageAndMarshal(t *testing.T) {
 	if n != len(segment2) {
 		t.Errorf("page.GetSegment bytes read, expected %d, got: %d", len(segment2), n)
 	}
-	if bytes.Compare(segment1, segment2) != 0 {
+	if !bytes.Equal(segment1, segment2) {
 		t.Errorf("bytes.Compare, expected: %s, got: %s", segment1, segment2)
 	}
 
@@ -123,7 +123,7 @@ func Test_MultipleOverflowPages(t *testing.T) {
 		}
 	}
 
-	if bytes.Compare(record1, record2) != 0 {
+	if !bytes.Equal(record1, record2) {
 		t.Errorf("bytes.Compare\n"+
 			"expecting: %s\n"+
 			"      got: %s", record1, record2)

@@ -62,7 +62,6 @@ func Test_HeapWrite(t *testing.T) {
 
 	heapRuns := 100000
 
-	rand.Seed(2323)
 	l := rand.Intn(1000)
 	if l == 0 {
 		l = 1
@@ -82,8 +81,8 @@ func Test_HeapWrite(t *testing.T) {
 		if _, err = heap.Get(rid, record2); err != nil {
 			t.Fatalf("heap.Get, err: %s", err)
 		}
-		if bytes.Compare(record1, record2) != 0 {
-			t.Fatalf("bytes.Compare: expected %t, got %t", record1, record2)
+		if !bytes.Equal(record1, record2) {
+			t.Fatalf("bytes.Compare: expected %s, got %s", record1, record2)
 			break
 		}
 	}
@@ -123,6 +122,9 @@ func Test_HeapDelete(t *testing.T) {
 func Test_FileUploadSequential(t *testing.T) {
 
 	datapath := "d:/algs4-data/leipzig1M.txt"
+	if _, err := os.Stat(datapath); os.IsNotExist(err) {
+		t.Skip("test data not available:", datapath)
+	}
 	//path := "D:/algs4-data/mobydick.txt"
 	file, err := os.Open(datapath)
 	if err != nil {
@@ -163,7 +165,7 @@ func Test_FileUploadSequential(t *testing.T) {
 	var successfulCompares int
 	for err == nil {
 		buf := buf[0:n]
-		if bytes.Compare(input[heapReads], buf) != 0 {
+		if !bytes.Equal(input[heapReads], buf) {
 			t.Fatalf("compare, \nexpecting: %s\n      got: %s", input[heapReads], buf)
 		} else {
 			successfulCompares++
@@ -181,6 +183,9 @@ func Test_FileUploadSequential(t *testing.T) {
 func Test_FileUploadParallel(t *testing.T) {
 
 	datapath := "d:/algs4-data/leipzig1M.txt"
+	if _, err := os.Stat(datapath); os.IsNotExist(err) {
+		t.Skip("test data not available:", datapath)
+	}
 	//path := "D:/algs4-data/mobydick.txt"
 	file, err := os.Open(datapath)
 	if err != nil {
@@ -309,7 +314,7 @@ func Test_FileUploadParallel(t *testing.T) {
 		if err != nil {
 			t.Fatalf("get record, err: %s", err)
 		}
-		if bytes.Compare(sample.buf, buf[0:n]) != 0 {
+		if !bytes.Equal(sample.buf, buf[0:n]) {
 			t.Fatalf("get record, expecting: %s, got: %s", sample.buf, buf[0:n])
 		} else {
 			goodCompares++

@@ -18,8 +18,8 @@ func Test_FillPage(t *testing.T) {
 			t.Fatalf("page.AddRecord, err: %s", err)
 		} else if _, err := page.GetRecord(recordNumber, record2); err != nil {
 			t.Fatalf("page.GetRecord, err: %s", err)
-		} else if bytes.Compare(record1, record2) != 0 {
-			t.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
+		} else if !bytes.Equal(record1, record2) {
+			t.Errorf("bytes.Compare: expected %s, got %s", record1, record2)
 			break
 		}
 	}
@@ -64,7 +64,7 @@ func Test_MarshalBinary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("page2.GetRecord, err: %s", err)
 		}
-		if bytes.Compare(record1, record2) != 0 {
+		if !bytes.Equal(record1, record2) {
 			t.Errorf("bytes.Compare, expecting: %s, got: %s", record1, record2)
 		}
 	}
@@ -84,8 +84,8 @@ func Test_DeleteRecords(t *testing.T) {
 			t.Fatalf("page.AddRecord, err: %s", err)
 		} else if _, err := page.GetRecord(recordNumber, record2); err != nil {
 			t.Fatalf("page.GetRecord, err: %s", err)
-		} else if bytes.Compare(record1, record2) != 0 {
-			t.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
+		} else if !bytes.Equal(record1, record2) {
+			t.Errorf("bytes.Compare: expected %s, got %s", record1, record2)
 			break
 		}
 	}
@@ -185,8 +185,8 @@ func BenchmarkFillPage(b *testing.B) {
 				b.Fatalf("page.AddRecord, err: %s", err)
 			} else if _, err := page.GetRecord(recordNumber, record2); err != nil {
 				b.Fatalf("page.GetRecord, err: %s", err)
-			} else if bytes.Compare(record1, record2) != 0 {
-				b.Errorf("bytes.Compare: expected %t, got %t", record1, record2)
+			} else if !bytes.Equal(record1, record2) {
+				b.Errorf("bytes.Compare: expected %s, got %s", record1, record2)
 				break
 			}
 

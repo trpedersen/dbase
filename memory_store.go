@@ -29,7 +29,7 @@ type memoryStore struct {
 func NewMemoryStore() (MemoryStore, error) {
 	store := &memoryStore{
 		bufferPool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return make([]byte, PageSize, PageSize)
 			},
 		},
