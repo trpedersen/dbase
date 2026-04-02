@@ -3,7 +3,17 @@
     "allow": [
       "Bash(\"/c/Program Files/Go/bin/go.exe\" build ./...)",
       "Bash(\"/c/Program Files/Go/bin/go.exe\" vet ./...)",
-      "Bash(\"/c/Program Files/Go/bin/go.exe\" test ./... -count=1)"
+      "Bash(\"/c/Program Files/Go/bin/go.exe\" test ./... -count=1)",
+      "Read(//c/Users/timpe/.claude/projects/c--Users-timpe-repos-dbase/memory//**)",
+      "Bash(git flow:*)",
+      "Bash(go build:*)",
+      "Bash(\"/c/Program Files/Go/bin/go\" build ./...)",
+      "Bash(\"/c/Program Files/Go/bin/go\" vet ./...)",
+      "Bash(\"/c/Program Files/Go/bin/go\" test ./... -count=1)",
+      "Bash(git push:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\timpe\\.claude\\projects\\c--Users-timpe-repos-dbase\\memory"
     ]
   }
 }

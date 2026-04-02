@@ -31,8 +31,9 @@ type heap struct {
 	deletes    int
 }
 
-// NewHeap returns a new Heap
-func NewHeap(store PageStore) Heap {
+// NewHeap returns a new Heap backed by store, or an error if the store
+// cannot be initialised or read.
+func NewHeap(store PageStore) (Heap, error) {
 	heap := &heap{
 		l:     &sync.Mutex{},
 		store: store,
@@ -45,34 +46,31 @@ func NewHeap(store PageStore) Heap {
 			},
 		},
 	}
-	var err error
 
 	if store.Count() == 0 {
 		// new store, initialise with header
-		_, err = store.Append(heap.headerPage)
-		if err != nil {
-			panic(fmt.Sprintf("NewHeap init, err: %s", err))
+		if _, err := store.Append(heap.headerPage); err != nil {
+			return nil, fmt.Errorf("NewHeap: append header page: %w", err)
 		}
-		var id PageID
-		id, err = store.Append(heap.lastPage)
+		id, err := store.Append(heap.lastPage)
 		if err != nil {
-			panic(fmt.Sprintf("NewHeap init, err: %s", err))
+			return nil, fmt.Errorf("NewHeap: append first data page: %w", err)
 		}
 		heap.headerPage.SetLastPageID(id)
 		if err := store.Write(0, heap.headerPage); err != nil {
-			panic(fmt.Sprintf("NewHeap, err: %s", err))
+			return nil, fmt.Errorf("NewHeap: write header page: %w", err)
 		}
 	}
 	// get the header page
 	if err := store.Read(0, heap.headerPage); err != nil {
-		panic(fmt.Sprintf("NewHeap, err: %s", err))
+		return nil, fmt.Errorf("NewHeap: read header page: %w", err)
 	}
 	// get the last page
 	if err := heap.store.Read(heap.headerPage.GetLastPageID(), heap.lastPage); err != nil {
-		panic(fmt.Sprintf("NewHeap, err: %s", err))
+		return nil, fmt.Errorf("NewHeap: read last page: %w", err)
 	}
 
-	return heap
+	return heap, nil
 }
 
 func (heap *heap) Clear() error {
@@ -83,31 +81,27 @@ func (heap *heap) Clear() error {
 	heap.headerPage = NewHeapHeaderPage()
 	heap.lastPage = NewHeapPage()
 
-	var err error
-
 	if heap.store.Count() == 0 {
 		// new store, initialise with header
-		_, err = heap.store.Append(heap.headerPage)
-		if err != nil {
-			panic(fmt.Sprintf("NewHeap init, err: %s", err))
+		if _, err := heap.store.Append(heap.headerPage); err != nil {
+			return fmt.Errorf("heap.Clear: append header page: %w", err)
 		}
-		var id PageID
-		id, err = heap.store.Append(heap.lastPage)
+		id, err := heap.store.Append(heap.lastPage)
 		if err != nil {
-			panic(fmt.Sprintf("NewHeap init, err: %s", err))
+			return fmt.Errorf("heap.Clear: append first data page: %w", err)
 		}
 		heap.headerPage.SetLastPageID(id)
 		if err := heap.store.Write(0, heap.headerPage); err != nil {
-			panic(fmt.Sprintf("NewHeap, err: %s", err))
+			return fmt.Errorf("heap.Clear: write header page: %w", err)
 		}
 	}
-	// set the header page
+	// reset the header page
 	if err := heap.store.Write(0, heap.headerPage); err != nil {
-		panic(fmt.Sprintf("NewHeap, err: %s", err))
+		return fmt.Errorf("heap.Clear: write header page: %w", err)
 	}
-	// set the last page
+	// reset the last page
 	if err := heap.store.Write(heap.headerPage.GetLastPageID(), heap.lastPage); err != nil {
-		panic(fmt.Sprintf("NewHeap, err: %s", err))
+		return fmt.Errorf("heap.Clear: write last page: %w", err)
 	}
 
 	return nil

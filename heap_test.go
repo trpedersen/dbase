@@ -42,7 +42,10 @@ func TestMain(m *testing.M) {
 
 func Test_CreateHeap(t *testing.T) {
 
-	heap := NewHeap(store)
+	heap, err := NewHeap(store)
+	if err != nil {
+		t.Fatalf("NewHeap: %v", err)
+	}
 
 	count := store.Count()
 	if count != 2 {
@@ -58,7 +61,10 @@ func Test_CreateHeap(t *testing.T) {
 
 func Test_HeapWrite(t *testing.T) {
 
-	heap := NewHeap(store)
+	heap, err := NewHeap(store)
+	if err != nil {
+		t.Fatalf("NewHeap: %v", err)
+	}
 
 	heapRuns := 100000
 
@@ -99,7 +105,10 @@ func Test_HeapWrite(t *testing.T) {
 
 func Test_HeapDelete(t *testing.T) {
 
-	heap := NewHeap(store)
+	heap, err := NewHeap(store)
+	if err != nil {
+		t.Fatalf("NewHeap: %v", err)
+	}
 
 	record1 := []byte("DELETE ME")
 	rid, err := heap.Put(record1)
@@ -141,7 +150,10 @@ func Test_FileUploadSequential(t *testing.T) {
 		file.Close()
 	}()
 
-	heap := NewHeap(store2)
+	heap, err := NewHeap(store2)
+	if err != nil {
+		t.Fatalf("NewHeap: %v", err)
+	}
 
 	var heapWrites int
 
@@ -200,8 +212,13 @@ func Test_FileUploadParallel(t *testing.T) {
 		file.Close()
 	}()
 
-	heap := NewHeap(store1)
-	heap.Clear()
+	heap, err := NewHeap(store1)
+	if err != nil {
+		t.Fatalf("NewHeap: %v", err)
+	}
+	if err := heap.Clear(); err != nil {
+		t.Fatalf("heap.Clear: %v", err)
+	}
 
 	var heapWrites int32
 	var scanCount int

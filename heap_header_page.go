@@ -2,6 +2,7 @@ package dbase
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 // HeapHeaderPage is the first data page in a store, contains stats and pointers to important pages at known locations.
@@ -72,12 +73,11 @@ func (page *heapHeaderPage) MarshalBinary() ([]byte, error) {
 func (page *heapHeaderPage) UnmarshalBinary(buf []byte) error {
 
 	if len(buf) != int(PageSize) {
-		panic("Invalid buffer")
+		return fmt.Errorf("heapHeaderPage.UnmarshalBinary: buffer length %d, want %d", len(buf), PageSize)
 	}
-	// check page type, panic if wrong
 	pageType := PageType(buf[pageTypeOffset])
 	if pageType != pageTypeHeapHeader {
-		panic("Invalid page type")
+		return fmt.Errorf("heapHeaderPage.UnmarshalBinary: page type 0x%02x, want 0x%02x", pageType, pageTypeHeapHeader)
 	}
 	copy(page.bytes, buf)
 	page.header = page.bytes[0:pageHeaderLength]

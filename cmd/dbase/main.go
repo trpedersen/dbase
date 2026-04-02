@@ -54,7 +54,10 @@ func fileStore() {
 
 func Test_HeapWrite(store dbase.PageStore) {
 
-	heap := dbase.NewHeap(store)
+	heap, err := dbase.NewHeap(store)
+	if err != nil {
+		log.Fatalf("NewHeap: %v", err)
+	}
 
 	heapRuns := 1000000
 
@@ -113,7 +116,10 @@ func Test_CreateHeap() {
 	} else if store == nil {
 		log.Fatal("expected db")
 	}
-	heap := dbase.NewHeap(store)
+	heap, err := dbase.NewHeap(store)
+	if err != nil {
+		log.Fatalf("NewHeap: %v", err)
+	}
 
 	count := store.Count()
 	if count != 2 {
@@ -156,7 +162,10 @@ func Test_HeapDelete() {
 	} else if store == nil {
 		log.Fatal("expected db")
 	}
-	heap := dbase.NewHeap(store)
+	heap, err := dbase.NewHeap(store)
+	if err != nil {
+		log.Fatalf("NewHeap: %v", err)
+	}
 
 	record1 := []byte("DELETE ME")
 	rid, err := heap.Put(record1)

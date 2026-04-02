@@ -93,12 +93,11 @@ func (page *overflowPage) UnmarshalBinary(buf []byte) error {
 	defer page.l.Unlock()
 
 	if len(buf) != int(PageSize) {
-		panic("Invalid buffer")
+		return fmt.Errorf("overflowPage.UnmarshalBinary: buffer length %d, want %d", len(buf), PageSize)
 	}
-	// check page type, panic if wrong
 	pageType := PageType(buf[pageTypeOffset])
 	if pageType != pageTypeOverflow {
-		panic("Invalid page type")
+		return fmt.Errorf("overflowPage.UnmarshalBinary: page type 0x%02x, want 0x%02x", pageType, pageTypeOverflow)
 	}
 
 	copy(page.bytes, buf)

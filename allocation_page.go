@@ -2,6 +2,7 @@ package dbase
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sync"
 )
 
@@ -59,12 +60,11 @@ func (page *allocationPage) UnmarshalBinary(buf []byte) error {
 	page.Lock()
 	defer page.Unlock()
 	if len(buf) != int(PageSize) {
-		panic("Invalid buffer")
+		return fmt.Errorf("allocationPage.UnmarshalBinary: buffer length %d, want %d", len(buf), PageSize)
 	}
-	// check page type, panic if wrong
 	pageType := PageType(buf[pageTypeOffset])
 	if pageType != pageTypeAllocationMap {
-		panic("Invalid page type")
+		return fmt.Errorf("allocationPage.UnmarshalBinary: page type 0x%02x, want 0x%02x", pageType, pageTypeAllocationMap)
 	}
 	copy(page.bytes, buf)
 	page.header = page.bytes[0:pageHeaderLength]
