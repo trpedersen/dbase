@@ -1,12 +1,10 @@
 package dbase
 
 import (
-	"io/ioutil"
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"bytes"
 )
 
 // Ensure that a file store can be opened without error.
@@ -159,7 +157,7 @@ func TestSetGet(t *testing.T) {
 	if _, err = page.GetRecord(slot, record2); err != nil {
 		t.Fatalf("page.GetRecord, err: %s", err)
 	}
-	if bytes.Compare(record1, record2) != 0 {
+	if !bytes.Equal(record1, record2) {
 		t.Fatalf("page.GetRecord, expected: %s, got: %s", record1, record2)
 	}
 
@@ -167,7 +165,7 @@ func TestSetGet(t *testing.T) {
 
 // tempfile returns a temporary file path.
 func tempfile() string {
-	f, err := ioutil.TempFile("c:/tmp", "db-")
+	f, err := os.CreateTemp(os.TempDir(), "db-")
 	if err != nil {
 		panic(err)
 	}

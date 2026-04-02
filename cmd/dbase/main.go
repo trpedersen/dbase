@@ -3,13 +3,13 @@ package main
 import (
 	"bytes"
 	"flag"
-	"github.com/trpedersen/dbase"
-	randstr "github.com/trpedersen/rand"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"runtime/pprof"
+
+	"github.com/trpedersen/dbase"
+	randstr "github.com/trpedersen/rand"
 )
 
 func main() {
@@ -58,7 +58,6 @@ func Test_HeapWrite(store dbase.PageStore) {
 
 	heapRuns := 1000000
 
-	rand.Seed(2323)
 	l := rand.Intn(1000)
 	if l == 0 {
 		l = 1
@@ -78,8 +77,8 @@ func Test_HeapWrite(store dbase.PageStore) {
 		if _, err = heap.Get(rid, record2); err != nil {
 			log.Fatalf("heap.Get, err: %s", err)
 		}
-		if bytes.Compare(record1, record2) != 0 {
-			log.Fatalf("bytes.Compare: expected %t, got %t", record1, record2)
+		if !bytes.Equal(record1, record2) {
+			log.Fatalf("bytes.Compare: expected %s, got %s", record1, record2)
 			break
 		}
 	}
@@ -131,7 +130,7 @@ func Test_CreateHeap() {
 // tempfile returns a temporary file path.
 func tempfile() string {
 
-	f, err := ioutil.TempFile("d:/tmp", "db-")
+	f, err := os.CreateTemp(os.TempDir(), "db-")
 	if err != nil {
 		panic(err)
 	}

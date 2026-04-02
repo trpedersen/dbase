@@ -46,7 +46,7 @@ func Open(path string, mode os.FileMode, options *FileStoreOptions) (FileStore, 
 		readOnly: false,
 		path:     path,
 		bufferPool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return make([]byte, PageSize, PageSize)
 			},
 		},

@@ -5,7 +5,8 @@
       "WebSearch",
       "WebFetch(domain:15445.courses.cs.cmu.edu)",
       "WebFetch(domain:cs186berkeley.net)",
-      "WebFetch(domain:dev.to)"
+      "WebFetch(domain:dev.to)",
+      "Bash(grep -n \"d:/\" /c/Users/timpe/repos/dbase/*.go)"
     ]
   }
 }

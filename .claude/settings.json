@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Program Files/Go/bin/go.exe\" build ./...)",
+      "Bash(\"/c/Program Files/Go/bin/go.exe\" vet ./...)",
+      "Bash(\"/c/Program Files/Go/bin/go.exe\" test ./... -count=1)"
+    ]
+  }
+}
